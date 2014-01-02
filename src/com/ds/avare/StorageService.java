@@ -673,7 +673,7 @@ public class StorageService extends Service {
         if(shouldTrack) {
             KMLRecorder.Config config = mKMLRecorder.new Config(
                 true,	/* always remove tracks from display on start */
-                10,		/* 10 seconds between position updates */
+                30,		/* 30 seconds between position updates */
                 true,	/* use verbose details */
                 Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + "com.ds.avare" + File.separatorChar + "Tracks",
                 20);	/* How fast we are going before starting to track, 20 knots */
