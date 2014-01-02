@@ -368,6 +368,10 @@ public class StorageService extends Service {
         if(mGps != null) {
             mGps.stop();
         }
+        
+        // Ensure that the KML file is closed off properly.
+        mKMLRecorder.stop();
+        
         super.onDestroy();
         
         System.runFinalizersOnExit(true);
