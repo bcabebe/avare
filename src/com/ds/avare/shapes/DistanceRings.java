@@ -126,7 +126,6 @@ public class DistanceRings {
         	/*
              * its / 60 as units is in minutes
              */
-        	speed = 60;
             mRings[RING_SPEED] = (float) ((float)(speed / 60) * pixPerNm * pref.getTimerRingSize() / fac); 
         }
 
