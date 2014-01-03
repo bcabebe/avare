@@ -42,24 +42,51 @@ import android.view.WindowManager;
  */
 public class Helper {
 
-    public static String calculateEta(double distance, double speed) {
-        String eta = "--:--"; 
+    public static String calculateEte(double distance, double speed) {
+        String ete = "--:--"; 
         if(0 == speed) {
-            return eta;
+            return ete;
         }
-        int etahr = (int)(distance / speed);
-        int etamin =  (int)Math.round((distance / speed - (double)etahr) * 60);
-        if(etahr > 99) {
+        int etehr = (int)(distance / speed);
+        int etemin =  (int)Math.round((distance / speed - (double)etehr) * 60);
+        if(etehr > 99) {
             return "XX:XX";
         }
         else {
-            String hr = String.format(Locale.getDefault(), "%02d", etahr);
-            String min = String.format(Locale.getDefault(), "%02d", etamin);
-            eta = new String(hr + ":" + min);
+            String hr = String.format(Locale.getDefault(), "%02d", etehr);
+            String min = String.format(Locale.getDefault(), "%02d", etemin);
+            ete = new String(hr + ":" + min);
         }
-        return eta;
+        return ete;
     }
     
+    public static String calculateEta(TimeZone timeZone, double distance, double speed) {
+
+        if(0 == speed) {
+            return "--:--";
+        }
+        
+        int eteHr = (int)(distance / speed);
+        int eteMn =  (int)Math.round((distance / speed - (double)eteHr) * 60);
+        if(eteHr > 99) {
+            return "XX:XX";
+        }
+
+        // Get the current local time hours and minutes
+        int etaHr = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        int etaMn = Calendar.getInstance().get(Calendar.MINUTE);
+        
+        etaMn += eteMn;	// Add the estimated minutes enroute to "now"
+        if(etaMn > 59) { etaMn -= 60; etaHr++; }	// account for minute rollover
+        etaHr += eteHr;	// Now add the hours enroute
+        if(etaHr > 23) { etaHr -= 24; }	// account for midnight rollover
+        
+        String strHr = String.format(Locale.getDefault(), "%02d", etaHr);
+        String strMn = String.format(Locale.getDefault(), "%02d", etaMn);
+
+        return strHr + ":" + strMn;
+    }
+
     /**
      * 
      * @param lonlat

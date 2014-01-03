@@ -735,4 +735,21 @@ Redistribution and use in source and binary forms, with or without modification,
         <item>Send to all applications</item>
     </string-array>
 
+	<string-array name="TextFieldOptions">
+	    <item>None</item>
+		<item>Greenwich Mean Time</item>
+	    <item>Local Time</item>
+		<item>Airspeed</item>
+	    <item>Heading</item>
+	    <item>Bearing</item>
+	    <item>Destination Identifier</item>
+	    <item>Distance</item>
+	    <item>Estimated Time Enroute</item>
+	    <item>Estimated Time of Arrival</item>
+	    <item>MSL Altitude</item>
+	    <item>AGL Height</item>
+	    <item>Hobbs Flight Timer</item>
+	    <item>Vertical Speed Indicator</item>
+    </string-array>
+	    
 </resources>

@@ -326,15 +326,60 @@ public class LocationActivity extends Activity implements Observer {
         View view = layoutInflater.inflate(R.layout.location, null);
         setContentView(view);
         mLocationView = (LocationView)view.findViewById(R.id.location);
-        
-        
 
         /*
          * To be notified of some action in the view
          */
         mLocationView.setGestureCallback(new GestureInterface() {
+        	int _nRowIdx;
+        	int _nFieldIdx;
+        	int _nNewSelection = 0;
+        	
+        	// This is the doubletap gesture that is called when the user desires
+        	// to change the "instrument" text display. We are passed the row and field index
+        	// of what is requested to change.
+        	@Override
+            public void gestureCallBack(int nEvent, int nRowIdx, int nFieldIdx) {
+        		_nRowIdx = nRowIdx;
+        		_nFieldIdx = nFieldIdx;
+        		
+        		if(GestureInterface.DOUBLE_TAP == nEvent) {
 
-            /*
+                	// Create the alert dialog and add the title.
+                	AlertDialog.Builder builder = new AlertDialog.Builder(LocationActivity.this);
+                	builder.setTitle(R.string.SelectTextFieldTitle);
+
+                	// The list of items to chose from. When a selection is made, save it off locally
+                    builder.setSingleChoiceItems(R.array.TextFieldOptions, mLocationView.mFieldLines[_nRowIdx][_nFieldIdx], 
+                    		new DialogInterface.OnClickListener() {
+                    		@Override
+	                        public void onClick(DialogInterface dialog, int which) {
+	                        	_nNewSelection = which;	
+	                        }
+                    });
+                    
+                    // OK button, copy the new selection to the true array so it will be displayed
+                    builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+                    		mLocationView.mFieldLines[_nRowIdx][_nFieldIdx] = _nNewSelection;
+                        }
+                    });
+
+                    // Cancel, nothing to do here, let the dialog self-destruct
+                    builder.setNegativeButton(R.string.Cancel, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int id) {
+                        }
+                    });
+                    
+                	// Create and show the dialog now
+                	AlertDialog dialog = builder.create();                	
+                	dialog.show();
+                }
+        	}
+
+        	/*
              * (non-Javadoc)
              * @see com.ds.avare.GestureInterface#gestureCallBack(int, java.lang.String)
              */
