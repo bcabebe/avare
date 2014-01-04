@@ -15,12 +15,12 @@ import com.ds.avare.storage.Preferences;
 public class InfoLines {
 
 	public class InfoLineFieldLoc {
-		public int mRow;
-		public int mCol;
+		public int mRowIdx;
+		public int mFieldIdx;
 		
-		public InfoLineFieldLoc(int aRow, int aCol) {
-			mRow = aRow;
-			mCol = aCol;
+		public InfoLineFieldLoc(int aRowIdx, int aFieldIdx) {
+			mRowIdx = aRowIdx;
+			mFieldIdx = aFieldIdx;
 		}
 	}
 	
@@ -79,7 +79,15 @@ public class InfoLines {
     public int[] getFieldPosX() {
     	return mFieldPosX;
     }
+
+    public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nType) {
+    	mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx] = nType;
+    }
     
+    public int getFieldType(InfoLineFieldLoc infoLineFieldLoc) {
+    	return mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx];
+    }
+
     public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY){
         if(posY > aPaint.getTextSize() * 2) {
     		return null;

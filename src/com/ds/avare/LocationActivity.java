@@ -27,6 +27,8 @@ import com.ds.avare.storage.StringPreference;
 import com.ds.avare.touch.GestureInterface;
 import com.ds.avare.touch.LongTouchDestination;
 import com.ds.avare.utils.Helper;
+import com.ds.avare.utils.InfoLines;
+import com.ds.avare.utils.InfoLines.InfoLineFieldLoc;
 import com.ds.avare.utils.NetworkHelper;
 
 import android.location.GpsStatus;
@@ -331,17 +333,19 @@ public class LocationActivity extends Activity implements Observer {
          * To be notified of some action in the view
          */
         mLocationView.setGestureCallback(new GestureInterface() {
-        	int _nRowIdx;
-        	int _nFieldIdx;
+    		InfoLineFieldLoc _InfoLineFieldLoc;
         	int _nNewSelection = 0;
         	
         	// This is the doubletap gesture that is called when the user desires
         	// to change the "instrument" text display. We are passed the row and field index
         	// of what is requested to change.
         	@Override
-            public void gestureCallBack(int nEvent, int nRowIdx, int nFieldIdx) {
-        		_nRowIdx = nRowIdx;
-        		_nFieldIdx = nFieldIdx;
+            public void gestureCallBack(int nEvent, InfoLineFieldLoc infoLineFieldLoc) {
+        		if(infoLineFieldLoc == null) {
+        			return;
+        		}
+        		
+        		_InfoLineFieldLoc = infoLineFieldLoc;
         		
         		if(GestureInterface.DOUBLE_TAP == nEvent) {
 
@@ -350,7 +354,7 @@ public class LocationActivity extends Activity implements Observer {
                 	builder.setTitle(R.string.SelectTextFieldTitle);
 
                 	// The list of items to chose from. When a selection is made, save it off locally
-                    builder.setSingleChoiceItems(R.array.TextFieldOptions, mLocationView.mInfoLines.getFieldLines()[_nRowIdx][_nFieldIdx], 
+                    builder.setSingleChoiceItems(R.array.TextFieldOptions, mLocationView.mInfoLines.getFieldType(_InfoLineFieldLoc), 
                     		new DialogInterface.OnClickListener() {
                     		@Override
 	                        public void onClick(DialogInterface dialog, int which) {
@@ -362,7 +366,7 @@ public class LocationActivity extends Activity implements Observer {
                     builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int id) {
-                    		mLocationView.mInfoLines.getFieldLines()[_nRowIdx][_nFieldIdx] = _nNewSelection;
+                    		mLocationView.mInfoLines.setFieldType(_InfoLineFieldLoc, _nNewSelection);
                         }
                     });
 

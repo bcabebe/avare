@@ -11,6 +11,8 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 
 package com.ds.avare.touch;
+import com.ds.avare.utils.InfoLines;
+import com.ds.avare.utils.InfoLines.InfoLineFieldLoc;
 
 
 /**
@@ -24,5 +26,5 @@ public interface GestureInterface {
     public static final int DOUBLE_TAP = 2;
     
     void gestureCallBack(int event, LongTouchDestination data);
-    void gestureCallBack(int event, int rowIdx, int fieldIdx);
+    void gestureCallBack(int event, InfoLineFieldLoc infoLineFieldLoc);
 }

@@ -1782,7 +1782,7 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         	InfoLineFieldLoc infoLineFieldLoc = mInfoLines.findField(mPaint, posX, posY);
         	if(infoLineFieldLoc != null) {
             	// We have the row and field. Tell the selection dialog to display
-            	mGestureCallBack.gestureCallBack(GestureInterface.DOUBLE_TAP, infoLineFieldLoc.mRow, infoLineFieldLoc.mCol);
+            	mGestureCallBack.gestureCallBack(GestureInterface.DOUBLE_TAP, infoLineFieldLoc);
         	}
         	return true;
         }
@@ -1803,7 +1803,7 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
              * In draw, long press has no meaning other than to clear the output from the activity
              */
             if(mDraw) {
-                mGestureCallBack.gestureCallBack(GestureInterface.LONG_PRESS, null);
+                mGestureCallBack.gestureCallBack(GestureInterface.LONG_PRESS, (LongTouchDestination)null);
                 return;
             }
 
