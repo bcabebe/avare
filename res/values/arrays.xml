@@ -739,11 +739,11 @@ Redistribution and use in source and binary forms, with or without modification,
 	    <item>None</item>
 		<item>Greenwich Mean Time</item>
 	    <item>Local Time</item>
-		<item>Airspeed</item>
+		<item>Ground Speed</item>
 	    <item>Heading</item>
 	    <item>Bearing</item>
 	    <item>Destination Identifier</item>
-	    <item>Distance</item>
+	    <item>Distance to Destination</item>
 	    <item>Estimated Time Enroute</item>
 	    <item>Estimated Time of Arrival</item>
 	    <item>MSL Altitude</item>
