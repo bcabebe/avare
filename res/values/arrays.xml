@@ -751,6 +751,24 @@ Redistribution and use in source and binary forms, with or without modification,
 	    <item>Hobbs Flight Timer</item>
 	    <item>Vertical Speed Indicator</item>
 	    <item>Descent Rate to Destination</item>
-	    </string-array>
+	</string-array>
 	    
+	<string-array name="TextFieldOptionTitles">
+	    <item></item>
+		<item>Zulu</item>
+	    <item></item>
+		<item>Ground Speed</item>
+	    <item>Heading</item>
+	    <item>Bearing</item>
+	    <item>Destination</item>
+	    <item>Distance</item>
+	    <item>ETE</item>
+	    <item>ETA</item>
+	    <item>MSL ft</item>
+	    <item>AGL ft</item>
+	    <item>Flight Time</item>
+	    <item>VSI fpm</item>
+	    <item>Dsc Rt fpm</item>
+	</string-array>
+
 </resources>

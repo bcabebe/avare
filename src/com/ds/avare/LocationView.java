@@ -1952,6 +1952,11 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
     public Preferences getPref() {
     	return mPref;
     }
+    
+    public Context getAppContext() { 
+    	return mContext;
+    }
+    
     /**
      * 
      */
