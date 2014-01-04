@@ -22,6 +22,8 @@ import android.graphics.Paint;
 import android.graphics.Paint.Align;
 
 import com.ds.avare.LocationView;
+import com.ds.avare.StorageService;
+import com.ds.avare.place.Destination;
 import com.ds.avare.storage.Preferences;
 
 /***
@@ -76,7 +78,8 @@ public class InfoLines {
     static final int ID_FLD_AGL = 11;
     static final int ID_FLD_HOB = 12;
     static final int ID_FLD_VSI = 13;
-    static final int ID_FLD_MAX = 14;
+    static final int ID_FLD_DRT = 14;
+    static final int ID_FLD_MAX = 15;
 
     /***
      * Construct this object passing in the LocationView that
@@ -390,7 +393,7 @@ public class InfoLines {
 	    				localTime.get(Calendar.MINUTE));
 	    		break;
 	    	}
-	    	
+
 	    	case ID_FLD_MSL: {
 	    		double alt = mLocationView.getGpsParams().getAltitude();
 	    		dspText = String.format(Locale.getDefault(), getAglMslFmtString(alt), alt);
@@ -405,7 +408,24 @@ public class InfoLines {
 	    		dspText = String.format(Locale.getDefault(), getAglMslFmtString(dAGL), dAGL);
 	    		break;
 	    	}
+
+	    	// If we have a destination set, and we are less than 30 miles out, then 
+	    	// calculate and return a descent rate
+	    	case ID_FLD_DRT: {
+	    		StorageService storageService = mLocationView.getStorageService(); 
+	    		if(storageService != null) {
+	    			Destination destination = storageService.getDestination();
+		    		if(destination != null) {
+		    			if(destination.getDistance() <= 30) {
+		    	    		dspText = String.format(Locale.getDefault(), "%+05.0f",
+		    	    				destination.getVerticalSpeedToNoFmt(mLocationView.getGpsParams()));
+		    			}
+		    		}
+	    		}
+	    		break;
+	    	}
 	    }
+
 	    return dspText;
     }
     

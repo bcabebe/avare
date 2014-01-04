@@ -797,4 +797,30 @@ public class Destination extends Observable {
 	    return "-" + vs + Preferences.vsConversionUnit;
 	}
 
+	public double getVerticalSpeedToNoFmt(GpsParams gpsParams)
+	{
+	    double time = (mDistance / gpsParams.getSpeed()) * 60;
+	    double height = gpsParams.getAltitude();
+	    if(mDestType.equals(BASE)) {
+	        try {
+	            /*
+	             * For bases, go to pattern altitude
+	             */
+	            String pa = mParams.get("Pattern Altitude");
+	            height -= Double.parseDouble(pa);
+	        }
+	        catch(Exception e) {
+	            
+	        }
+	    }
+	    else {
+	        /*
+	         * Only for airport
+	         */
+	        return 0;
+	    }
+	    
+	    
+	    return Math.round(height / time);
+	}
 }

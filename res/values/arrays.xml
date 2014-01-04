@@ -750,6 +750,7 @@ Redistribution and use in source and binary forms, with or without modification,
 	    <item>AGL Height</item>
 	    <item>Hobbs Flight Timer</item>
 	    <item>Vertical Speed Indicator</item>
-    </string-array>
+	    <item>Descent Rate to Destination</item>
+	    </string-array>
 	    
 </resources>
