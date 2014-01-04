@@ -24,27 +24,37 @@ import android.graphics.Paint.Align;
 import com.ds.avare.LocationView;
 import com.ds.avare.storage.Preferences;
 
+/***
+ * Object to handle all of the text on the top two lines of the screen
+ * along with their configured content
+ * 
+ * @author Ron
+ *
+ */
 public class InfoLines {
 
+	// Simple class to encapsulate a filed location on the screen
 	public class InfoLineFieldLoc {
 		int mRowIdx;
 		int mFieldIdx;
 		
-		private InfoLineFieldLoc(int aRowIdx, int aFieldIdx) {
+		private InfoLineFieldLoc(int aRowIdx, int aFieldIdx) 
+		{
 			mRowIdx = aRowIdx;
 			mFieldIdx = aFieldIdx;
 		}
 	}
 	
 	// Dynamic data fields related items
-    int mDisplayWidth;
-    int mDisplayOrientation;
-    int mFieldPosX[];
-    int mFieldLines[][];
+    int mDisplayWidth;			// Horizontal display size
+    int mDisplayOrientation;	// portrait or landscape
+    int mFieldPosX[];			// X positions of the fields left edges
+    int mFieldLines[][];		// Configuration/content of the status lines
 
-    Preferences mPref;
-    LocationView mLocationView;
-    
+    Preferences mPref;			// How to fetch preferences
+    LocationView mLocationView;	// Link back to the location view
+
+    // Constants to indicate the display orientation
     static final int ID_DO_LANDSCAPE = 0;
     static final int ID_DO_PORTRAIT  = 1;
 
@@ -67,8 +77,15 @@ public class InfoLines {
     static final int ID_FLD_HOB = 12;
     static final int ID_FLD_VSI = 13;
     static final int ID_FLD_MAX = 14;
-    
-    public InfoLines(LocationView locationView) {
+
+    /***
+     * Construct this object passing in the LocationView that
+     * did the creation
+     * 
+     * @param locationView
+     */
+    public InfoLines(LocationView locationView) 
+    {
     	mLocationView = locationView;
     	mPref = mLocationView.getPref();
     	
@@ -82,35 +99,54 @@ public class InfoLines {
 	        }
         }
     }
-    
-    public int[][] getFieldLines(){
-    	return mFieldLines;
-    }
-    
-    public int[] getFieldPosX() {
-    	return mFieldPosX;
-    }
 
-    public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nType) {
-    	if(rangeCheck(infoLineFieldLoc) == true)
+    /***
+     * A caller wishes to change the type of the display field.
+     * 
+     * @param infoLineFieldLoc what field to change
+     * @param nType what type to set it to
+     */
+    public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nType) 
+    {
+    	if(rangeCheck(infoLineFieldLoc) == true) {	// Make sure field in range
     		mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx] = nType;
+    		mPref.setRowFormats(buildConfigString());	// Save to storage
+    	}
     }
     
-    public int getFieldType(InfoLineFieldLoc infoLineFieldLoc) {
+	/***
+	 * Return the type ID of the field in question
+	 *  
+	 * @param infoLineFieldLoc
+	 * @return
+	 */
+    public int getFieldType(InfoLineFieldLoc infoLineFieldLoc) 
+    {
     	if(rangeCheck(infoLineFieldLoc) == true)
     		return mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx];
     	return ID_FLD_NUL;
     }
 
-    boolean rangeCheck(InfoLineFieldLoc iLFL){
+    boolean rangeCheck(InfoLineFieldLoc iLFL)
+    {
     	if((iLFL.mRowIdx < 0) || (iLFL.mRowIdx >= mFieldLines.length))
     		return false;
     	if((iLFL.mFieldIdx < 0) || (iLFL.mFieldIdx >= mFieldLines[iLFL.mRowIdx].length))
     		return false;
         return true;
     }
-    
-    public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY){
+
+    /***
+     * Is there a field to display at the indicated location. To figure this out we
+     * need the X/Y of the location along with the paint object (which determines text size)
+     * 
+     * @param aPaint
+     * @param posX
+     * @param posY
+     * @return an InfoLineFieldLoc object which identifies the field or null
+     */
+    public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY)
+    {
         if(posY > aPaint.getTextSize() * 2) {
     		return null;
         }
@@ -137,27 +173,31 @@ public class InfoLines {
 
     	return new InfoLineFieldLoc(nRowIdx, nFieldIdx);
     }
-    
-    /*** 
-     * This method draws the top two lines of the display using a configuration list
-     * of what and where to draw each item.
+
+    /***
+     * This method draws the top two lines of the display.
+     * 
      * @param canvas
+     * @param aPaint
+     * @param errorStatus
+     * @param aTextColor
+     * @param aTextColorOpposite
+     * @param aShadow
      */
-    public void drawCornerTextsDynamic(Canvas canvas, Paint aPaint, String errorStatus, int aTextColor, int aTextColorOpposite, int aShadow){
+    public void drawCornerTextsDynamic(Canvas canvas, Paint aPaint, String errorStatus, int aTextColor, int aTextColorOpposite, int aShadow)
+    {
     	// If the screen width has changed since the last time, we need to recalc
     	// the positions of the fields
-    	int aDisplayWidth = mLocationView.getDisplayWidth();
-    	if(mDisplayWidth != aDisplayWidth){
-    		resizeFields(aPaint, aDisplayWidth);
-    	}
-    	mDisplayWidth = aDisplayWidth;
+		resizeFields(aPaint, mLocationView.getDisplayWidth());
     	
-    	// Draw the shadowed background if we are configured to do so
+		float textSize = aPaint.getTextSize();
+		
+    	// Draw the shadowed background on the top 2 lines if we are configured to do so
         if(mPref.shouldShowBackground()) {
         	aPaint.setShadowLayer(0, 0, 0, 0);
         	aPaint.setColor(aTextColorOpposite);
         	aPaint.setAlpha(0x7f);
-            canvas.drawRect(0, 0, aDisplayWidth, aPaint.getTextSize() * 2 + aShadow, aPaint);
+            canvas.drawRect(0, 0, mDisplayWidth, textSize * 2 + aShadow, aPaint);
             aPaint.setAlpha(0xff);
         }
         aPaint.setShadowLayer(aShadow, aShadow, aShadow, Color.BLACK);
@@ -173,7 +213,7 @@ public class InfoLines {
         
         for(int row = 0; row < 2; row++) {
 	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
-	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine + row][idx]), mFieldPosX[idx], aPaint.getTextSize() * (1 + row), aPaint);
+	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine + row][idx]), mFieldPosX[idx], textSize * (1 + row), aPaint);
 	        }
         }
         
@@ -183,22 +223,29 @@ public class InfoLines {
         	aPaint.setTextAlign(Align.RIGHT);
         	aPaint.setColor(Color.RED);
             canvas.drawText(errorStatus,
-                    aDisplayWidth, aPaint.getTextSize() * 2, aPaint);
+                    mDisplayWidth, textSize * 2, aPaint);
         }
     }
 
     /***
-     * Calculate the quantity and size of the display field areas on this screen
+     * Calculate the quantity and size of that we can display with the given display width and paint.
+     * 
+     * @param aPaint
+     * @param aDisplayWidth
      */
     private void resizeFields(Paint aPaint, int aDisplayWidth)
     {
+    	// If the size did not change, then we don't need to do any work
+    	if(mDisplayWidth == aDisplayWidth)
+    		return;
+    	
+        // Set our copy of what the display width is.
+        mDisplayWidth = aDisplayWidth;
+        
     	// Set if we are in portrait or landscape mode. This determines what
     	// status lines we draw
     	mDisplayOrientation = mPref.getOrientation().contains("Landscape") ? ID_DO_LANDSCAPE : ID_DO_PORTRAIT; 
     	
-        // Get our visible display width in pixels
-        mDisplayWidth = aDisplayWidth;
-        
         // Fetch the NULL field to figure out how large it is
         String strField = getDisplayFieldValue(ID_FLD_NUL) + " ";
         float charWidths[] = new float[strField.length()];
@@ -239,7 +286,7 @@ public class InfoLines {
     
     /***
      * Return a string that represents the value of the desired field
-     * @param nField which field to request
+     * @param aField which field is being requested
      * @return string display value for that field
      */
     private String getDisplayFieldValue(int aField)
@@ -258,24 +305,32 @@ public class InfoLines {
 	    	}
 	    	
 	    	case ID_FLD_SPD: {
-	    		dspText = String.format(Locale.getDefault(), "%3.0f%s", mLocationView.getGpsParams().getSpeed(), Preferences.speedConversionUnit);
+	    		dspText = String.format(Locale.getDefault(), "%3.0f%s", mLocationView.getGpsParams().getSpeed(), 
+	    				Preferences.speedConversionUnit);
 	            break;
 	    	}
 	
 	    	case ID_FLD_HOB: {
-	    		dspText = "" + mLocationView.getStorageService().getFlightTimer().getValue();
+	    		if(mLocationView.getStorageService() != null) {
+	    			dspText = "" + mLocationView.getStorageService().getFlightTimer().getValue();
+	    		}
 	    		break;
 	    	}
 	    	
 	    	case ID_FLD_HDG: {
-	    		dspText = " " + Helper.correctConvertHeading(Math.round((Helper.getMagneticHeading(mLocationView.getGpsParams().getBearing(), mLocationView.getGpsParams().getDeclinition())))) + '\u00B0';
+	    		dspText = " " + Helper.correctConvertHeading(Math.round((
+	    				Helper.getMagneticHeading(mLocationView.getGpsParams().getBearing(), 
+	    						mLocationView.getGpsParams().getDeclinition())))) + '\u00B0';
 	    		break;
 	    	}
 	    	
 	    	case ID_FLD_BRG: {
 	    		if(mLocationView.getStorageService() != null) {
 		    		if(mLocationView.getStorageService().getDestination() != null) {
-		    			dspText = " " + Helper.correctConvertHeading(Math.round((Helper.getMagneticHeading(mLocationView.getStorageService().getDestination().getBearing(), mLocationView.getGpsParams().getDeclinition())))) + '\u00B0';
+		    			dspText = " " + Helper.correctConvertHeading(Math.round((
+		    					Helper.getMagneticHeading(
+		    					mLocationView.getStorageService().getDestination().getBearing(), 
+		    					mLocationView.getGpsParams().getDeclinition())))) + '\u00B0';
 		    		}
 	    		}
 	    		break;
@@ -293,7 +348,9 @@ public class InfoLines {
 	    	case ID_FLD_DIS: {
 	    		if(mLocationView.getStorageService() != null) {
 		    		if(mLocationView.getStorageService().getDestination() != null) {
-		        		dspText = String.format(Locale.getDefault(), "%3.0f%s", mLocationView.getStorageService().getDestination().getDistance(), Preferences.distanceConversionUnit);
+		        		dspText = String.format(Locale.getDefault(), "%3.0f%s", 
+		        				mLocationView.getStorageService().getDestination().getDistance(), 
+		        				Preferences.distanceConversionUnit);
 		    		}
 	    		}
 	    		break;
@@ -319,19 +376,24 @@ public class InfoLines {
 	    	
 	    	case ID_FLD_LT: {
 	    		Calendar localTime = Calendar.getInstance();
-	    		dspText = String.format(Locale.getDefault(), "%02d:%02d", localTime.get(Calendar.HOUR_OF_DAY), localTime.get(Calendar.MINUTE));
+	    		dspText = String.format(Locale.getDefault(), "%02d:%02d", 
+	    				localTime.get(Calendar.HOUR_OF_DAY), 
+	    				localTime.get(Calendar.MINUTE));
 	    		break;
 	    	}
 	    	
 	    	case ID_FLD_GMT: {
 	    		Calendar localTime = Calendar.getInstance();
 	    		localTime.setTimeZone(TimeZone.getTimeZone("UTC"));
-	    		dspText = String.format(Locale.getDefault(), "%02d:%02d", localTime.get(Calendar.HOUR_OF_DAY), localTime.get(Calendar.MINUTE));
+	    		dspText = String.format(Locale.getDefault(), "%02d:%02d", 
+	    				localTime.get(Calendar.HOUR_OF_DAY), 
+	    				localTime.get(Calendar.MINUTE));
 	    		break;
 	    	}
 	    	
 	    	case ID_FLD_MSL: {
-	    		dspText = String.format(Locale.getDefault(), "%05.0f", mLocationView.getGpsParams().getAltitude());
+	    		double alt = mLocationView.getGpsParams().getAltitude();
+	    		dspText = String.format(Locale.getDefault(), getAglMslFmtString(alt), alt);
 	    		break;
 	    	}
 	    	
@@ -340,10 +402,50 @@ public class InfoLines {
 	    		double dElev = mLocationView.getElev();
 	    		if (dElev > 0)
 	    			dAGL = mLocationView.getGpsParams().getAltitude() - dElev;
-	    		dspText = String.format(Locale.getDefault(), "%05.0f", dAGL);
+	    		dspText = String.format(Locale.getDefault(), getAglMslFmtString(dAGL), dAGL);
 	    		break;
 	    	}
 	    }
 	    return dspText;
+    }
+    
+    /***
+     * Return a format string for the value passed in
+     * @param value 
+     * @return
+     */
+    private String getAglMslFmtString(double value)
+    {
+		String fmtString = "";
+		if(value >= 9999)
+			fmtString = "%05.0f";
+		else if(value >= 1000)
+			fmtString = "%4.0f'";
+		else if(value >= 100)
+			fmtString = "%03.0fft";
+		return fmtString;
+    }
+
+    /***
+     * Create the configuration string for the current settings and save
+     * it to the shared preferences area
+     * 
+     * @return string that represents the current format of the fields
+     */
+    private String buildConfigString()
+    {
+    	String rowFormats = "";
+    	for(int rowIdx = 0, rowMax = mFieldLines.length; rowIdx < rowMax; rowIdx++) {
+    		for(int fldIdx = 0, fldMax = mFieldLines[rowIdx].length; fldIdx < fldMax; fldIdx++) {
+    			rowFormats += mFieldLines[rowIdx][fldIdx];
+    			if(fldIdx < fldMax - 1) {
+    				rowFormats += ',';
+    			}
+    		}
+    		if(rowIdx < rowMax - 1) {
+    			rowFormats += ' ';
+    		}
+    	}
+    	return rowFormats;
     }
 }

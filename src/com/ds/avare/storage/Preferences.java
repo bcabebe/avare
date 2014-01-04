@@ -688,4 +688,8 @@ public class Preferences {
     public String getRowFormats() {
     	return mPref.getString(mContext.getString(R.string.prefGetRowFormats), "6,0,0,0,7,8,5 10,0,0,0,3,12,4 6,7,8,5 10,3,12,4");
     }
+
+    public void setRowFormats(String rowFormats) {
+    	mPref.edit().putString(mContext.getString(R.string.prefGetRowFormats), rowFormats).commit();
+    }
 }
