@@ -13,11 +13,8 @@ Redistribution and use in source and binary forms, with or without modification,
 package com.ds.avare;
 
 
-import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 
 import com.ds.avare.adsb.NexradBitmap;
 import com.ds.avare.adsb.Traffic;
@@ -44,6 +41,8 @@ import com.ds.avare.touch.MultiTouchController.PointInfo;
 import com.ds.avare.touch.MultiTouchController.PositionAndScale;
 import com.ds.avare.utils.BitmapHolder;
 import com.ds.avare.utils.Helper;
+import com.ds.avare.utils.InfoLines;
+import com.ds.avare.utils.InfoLines.InfoLineFieldLoc;
 import com.ds.avare.weather.AirSigMet;
 import com.ds.avare.weather.Airep;
 import com.ds.avare.weather.Metar;
@@ -244,34 +243,8 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
     // Instantaneous vertical speed in feet per minute
     double mVSI;
 
-    // Dynamic data fields related items
-    int mDisplayWidth;
-    int mDisplayOrientation;
-    int mFieldPosX[];
-    int mFieldLines[][];
-    
-    static final int ID_DO_LANDSCAPE = 0;
-    static final int ID_DO_PORTRAIT  = 1;
-
-    // To add new display fields, take the ID_FLD_MAX value, and adjust MAX up by 1. 
-    // ID_FLD_MAX must always be the highest, an ID_FLD_NUL the lowest
-    // Ensure that the string-array "TextFieldOptions" is update with the new entry
-    // in the proper order
-    static final int ID_FLD_NUL = 0;
-    static final int ID_FLD_GMT = 1;
-    static final int ID_FLD_LT  = 2;
-    static final int ID_FLD_SPD = 3;
-    static final int ID_FLD_HDG = 4;
-    static final int ID_FLD_BRG = 5;
-    static final int ID_FLD_DST = 6;
-    static final int ID_FLD_DIS = 7;
-    static final int ID_FLD_ETE = 8;
-    static final int ID_FLD_ETA = 9;
-    static final int ID_FLD_MSL = 10;
-    static final int ID_FLD_AGL = 11;
-    static final int ID_FLD_HOB = 12;
-    static final int ID_FLD_VSI = 13;
-    static final int ID_FLD_MAX = 14;
+    // Handler for the top two lines of status information
+    InfoLines mInfoLines;
     
     /**
      * @param context
@@ -366,16 +339,8 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         mGestureDetector = new GestureDetector(context, new GestureListener());
      
         mDipToPix = Helper.getDpiToPix(context);
-
-        mFieldLines = new int[4][ID_FLD_MAX];	// 2 Lines for portrait, 2 for landscape
-        String rowFormats = mPref.getRowFormats();	// One config string for all 4 lines
-        String strRows[] = rowFormats.split(" ");	// Split the string to get each row
-        for(int rowIdx = 0; rowIdx < strRows.length; rowIdx++) {
-	        String arFields[] = strRows[rowIdx].split(",");		// Split the row string to get each field
-	        for(int idx = 0; idx < arFields.length; idx++) {
-	        	mFieldLines[rowIdx][idx] = Integer.parseInt(arFields[idx]);
-	        }
-        }
+        
+        mInfoLines = new InfoLines(this);
     }
     
     /**
@@ -835,202 +800,6 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         }
     }
 
-    /*** 
-     * This method draws the top two lines of the display using a configuration list
-     * of what and where to draw each item.
-     * @param canvas
-     */
-    private void drawCornerTextsDynamic(Canvas canvas){
-    	// If the screen width has changed since the last time, we need to recalc
-    	// the positions of the fields
-    	if(mDisplayWidth != getWidth()){
-    		resizeFields();
-    	}
-    	
-    	// Draw the shadowed background if we are configured to do so
-        if(mPref.shouldShowBackground()) {
-            mPaint.setShadowLayer(0, 0, 0, 0);
-            mPaint.setColor(TEXT_COLOR_OPPOSITE);
-            mPaint.setAlpha(0x7f);
-            canvas.drawRect(0, 0, getWidth(), mPaint.getTextSize() * 2 + SHADOW, mPaint);
-            mPaint.setAlpha(0xff);
-        }
-        mPaint.setShadowLayer(SHADOW, SHADOW, SHADOW, Color.BLACK);
-
-        // White text that is left aligned
-        mPaint.setTextAlign(Align.LEFT);
-        mPaint.setColor(Color.WHITE);
-
-        // Lines 0/1 are for landscape, 2/3 for portrait
-        int nStartLine = 0;
-        if (mDisplayOrientation == ID_DO_PORTRAIT)
-        	nStartLine = 2;
-        
-        for(int row = 0; row < 2; row++) {
-	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
-	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine + row][idx]), mFieldPosX[idx], mPaint.getTextSize() * (1 + row), mPaint);
-	        }
-        }
-        
-        // Now check for an error message. That will overwrite some of the fields on the screen
-        // If we have an error message, that has priority over everything else
-        if(mErrorStatus != null) {
-            mPaint.setTextAlign(Align.RIGHT);
-            mPaint.setColor(Color.RED);
-            canvas.drawText(mErrorStatus,
-                    getWidth(), mPaint.getTextSize() * 2, mPaint);
-        }
-    }
-
-    /***
-     * Calculate the quantity and size of the display field areas on this screen
-     */
-    private void resizeFields()
-    {
-    	// Set if we are in portrait or landscape mode. This determines what
-    	// status lines we draw
-    	mDisplayOrientation = mPref.getOrientation().contains("Landscape") ? ID_DO_LANDSCAPE : ID_DO_PORTRAIT; 
-    	
-        // Get our visible display width in pixels
-        mDisplayWidth = getWidth();
-        
-        // Fetch the NULL field to figure out how large it is
-        String strField = getDisplayFieldValue(ID_FLD_NUL) + " ";
-        float charWidths[] = new float[strField.length()];
-        mPaint.getTextWidths(strField, charWidths);
-        int fieldWidth = ((int)charWidths[0] * strField.length());
-        
-        // Now we can determine the max fields per line we can display
-        int maxFieldsPerLine = mDisplayWidth / fieldWidth;
-
-        // There might be leftover space. Divide it so that it pads between
-        // the fields
-        int nLeftoverSpace = mDisplayWidth - maxFieldsPerLine * fieldWidth;
-        int nPadding = nLeftoverSpace / (maxFieldsPerLine - 1);
-        
-        // Now calculate the horizontal position of each field
-        int nRightShift = nPadding;
-        mFieldPosX = new int[maxFieldsPerLine];
-        mFieldPosX[0] = 0;
-        for(int idx = 1, max = mFieldPosX.length; idx < max; idx++){
-        	mFieldPosX[idx] = mFieldPosX[idx - 1] +  fieldWidth + nRightShift;
-
-        	// If this is the last field then make it right justified
-        	if(idx == max - 1) {
-        		mFieldPosX[idx] = mDisplayWidth - fieldWidth + (int)charWidths[0];
-        	}
-        	
-        	// Adjust the padding between this and the next field
-        	if(nLeftoverSpace > nPadding) {
-        		nLeftoverSpace -= nPadding;
-        		nRightShift = nPadding;
-        	} else {
-        		nRightShift = nLeftoverSpace;
-        		nLeftoverSpace = 0;
-        	}
-        }
-
-    }
-    
-    /***
-     * Return a string that represents the value of the desired field
-     * @param nField which field to request
-     * @return string display value for that field
-     */
-    private String getDisplayFieldValue(int nField)
-    {
-	    String dspText = "     ";
-	    switch(nField) {
-	    	default:
-		    case ID_FLD_NUL: {
-		    	dspText = "     ";
-		    	break;
-		    }
-		    
-	    	case ID_FLD_VSI: {
-	    		dspText = String.format(Locale.getDefault(), "%+05.0f", mVSI);
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_SPD: {
-	    		dspText = String.format(Locale.getDefault(), "%3.0f%s", mGpsParams.getSpeed(), Preferences.speedConversionUnit);
-	            break;
-	    	}
-	
-	    	case ID_FLD_HOB: {
-	    		dspText = "" + mService.getFlightTimer().getValue();
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_HDG: {
-	    		dspText = " " + Helper.correctConvertHeading(Math.round((Helper.getMagneticHeading(mGpsParams.getBearing(), mGpsParams.getDeclinition())))) + '\u00B0';
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_BRG: {
-	    		if(mService.getDestination() != null) {
-	    			dspText = " " + Helper.correctConvertHeading(Math.round((Helper.getMagneticHeading(mService.getDestination().getBearing(), mGpsParams.getDeclinition())))) + '\u00B0';
-	    		}
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_DST: {
-	    		if(mService.getDestination() != null) {
-	    			dspText = "  " + mService.getDestination().getID();
-	    		}
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_DIS: {
-	    		if(mService.getDestination() != null) {
-	        		dspText = String.format(Locale.getDefault(), "%3.0f%s", mService.getDestination().getDistance(), Preferences.distanceConversionUnit);
-	    		}
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_ETE: {
-	    		if(mService.getDestination() != null) {
-	    			dspText = "" + mService.getDestination().getEte();
-	    		}
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_ETA: {
-	    		if(mService.getDestination() != null) {
-	    			dspText = "" + mService.getDestination().getEta();
-	    		}
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_LT: {
-	    		Calendar localTime = Calendar.getInstance();
-	    		dspText = String.format(Locale.getDefault(), "%02d:%02d", localTime.get(Calendar.HOUR_OF_DAY), localTime.get(Calendar.MINUTE));
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_GMT: {
-	    		Calendar localTime = Calendar.getInstance();
-	    		localTime.setTimeZone(TimeZone.getTimeZone("UTC"));
-	    		dspText = String.format(Locale.getDefault(), "%02d:%02d", localTime.get(Calendar.HOUR_OF_DAY), localTime.get(Calendar.MINUTE));
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_MSL: {
-	    		dspText = String.format(Locale.getDefault(), "%05.0f", mGpsParams.getAltitude());
-	    		break;
-	    	}
-	    	
-	    	case ID_FLD_AGL: {
-	    		double dAGL = 0;
-	    		double dElev = mElev;
-	    		if (dElev > 0)
-	    			dAGL = mGpsParams.getAltitude() - dElev;
-	    		dspText = String.format(Locale.getDefault(), "%05.0f", dAGL);
-	    		break;
-	    	}
-	    }
-	    return dspText;
-    }
     
     /**
      * 
@@ -1560,7 +1329,7 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         }
         
         if(mPref.useDynamicFields() == true) {
-        	drawCornerTextsDynamic(canvas);
+        	mInfoLines.drawCornerTextsDynamic(canvas, mPaint, mErrorStatus, TEXT_COLOR, TEXT_COLOR_OPPOSITE, SHADOW);
         } else {
         	drawCornerTexts(canvas);
         }
@@ -2004,40 +1773,18 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         public boolean onDoubleTap(MotionEvent e) {
         	
         	// Ignore this gesture if we are not configured to use dynamic fields
-        	if(mPref.useDynamicFields() == false) {
+        	if((mPref.useDynamicFields() == false) || (mService == null)) {
         		return false;
         	}
         	
-        	// If the double tap occurred in the top 2 lines, then we want to pop
-        	// up a configuration dialog for that field.
-            if(mCurrTouchPoint.getY() < (mPaint.getTextSize() * 2) && mService != null) {
-
-            	// Did we tap on Row0 or Row1 ?
-            	int nRowIdx = 0;
-            	if(mCurrTouchPoint.getY() > mPaint.getTextSize()) {
-            		nRowIdx = 1;
-            	}
-            	
-            	// Make the adjustment here in case we are in PORTRAIT display mode
-            	if(mDisplayOrientation == ID_DO_PORTRAIT) {
-            		nRowIdx += 2;
-            	}
-            	// Find out what field we tapped over
-            	int nFieldIdx =  mFieldPosX.length - 1;
-            	double x = mCurrTouchPoint.getX();
-            	for(int idx = 1; idx < mFieldPosX.length; idx++) {
-            		if(mFieldPosX[idx] > x) {
-            			nFieldIdx = idx - 1;
-            			break;
-            		}
-            	}
-            	
+        	float posX = mCurrTouchPoint.getX();
+        	float posY = mCurrTouchPoint.getY();
+        	InfoLineFieldLoc infoLineFieldLoc = mInfoLines.findField(mPaint, posX, posY);
+        	if(infoLineFieldLoc != null) {
             	// We have the row and field. Tell the selection dialog to display
-            	mGestureCallBack.gestureCallBack(GestureInterface.DOUBLE_TAP, nRowIdx, nFieldIdx);
-            	return true;
-            }
-            
-            return false;
+            	mGestureCallBack.gestureCallBack(GestureInterface.DOUBLE_TAP, infoLineFieldLoc.mRow, infoLineFieldLoc.mCol);
+        	}
+        	return true;
         }
         
         /* (non-Javadoc)
@@ -2181,7 +1928,30 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         mTrackUp = tu;
         invalidate();
     }
+
+    public double getElev() {
+    	return mElev;
+    	
+    }
     
+    public double getVSI() {
+    	return mVSI;
+    }
+    
+    public GpsParams getGpsParams() {
+    	return mGpsParams;
+    }
+    
+    public StorageService getStorageService() {
+    	return mService;
+    }
+    public int getDisplayWidth() {
+    	return getWidth();
+    }
+    
+    public Preferences getPref() {
+    	return mPref;
+    }
     /**
      * 
      */

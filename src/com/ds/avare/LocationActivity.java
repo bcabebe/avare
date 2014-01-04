@@ -350,7 +350,7 @@ public class LocationActivity extends Activity implements Observer {
                 	builder.setTitle(R.string.SelectTextFieldTitle);
 
                 	// The list of items to chose from. When a selection is made, save it off locally
-                    builder.setSingleChoiceItems(R.array.TextFieldOptions, mLocationView.mFieldLines[_nRowIdx][_nFieldIdx], 
+                    builder.setSingleChoiceItems(R.array.TextFieldOptions, mLocationView.mInfoLines.getFieldLines()[_nRowIdx][_nFieldIdx], 
                     		new DialogInterface.OnClickListener() {
                     		@Override
 	                        public void onClick(DialogInterface dialog, int which) {
@@ -362,7 +362,7 @@ public class LocationActivity extends Activity implements Observer {
                     builder.setPositiveButton(R.string.OK, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int id) {
-                    		mLocationView.mFieldLines[_nRowIdx][_nFieldIdx] = _nNewSelection;
+                    		mLocationView.mInfoLines.getFieldLines()[_nRowIdx][_nFieldIdx] = _nNewSelection;
                         }
                     });
 
