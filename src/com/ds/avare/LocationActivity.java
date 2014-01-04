@@ -27,7 +27,6 @@ import com.ds.avare.storage.StringPreference;
 import com.ds.avare.touch.GestureInterface;
 import com.ds.avare.touch.LongTouchDestination;
 import com.ds.avare.utils.Helper;
-import com.ds.avare.utils.InfoLines;
 import com.ds.avare.utils.InfoLines.InfoLineFieldLoc;
 import com.ds.avare.utils.NetworkHelper;
 

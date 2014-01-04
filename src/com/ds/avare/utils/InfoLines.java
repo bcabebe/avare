@@ -15,10 +15,10 @@ import com.ds.avare.storage.Preferences;
 public class InfoLines {
 
 	public class InfoLineFieldLoc {
-		public int mRowIdx;
-		public int mFieldIdx;
+		int mRowIdx;
+		int mFieldIdx;
 		
-		public InfoLineFieldLoc(int aRowIdx, int aFieldIdx) {
+		private InfoLineFieldLoc(int aRowIdx, int aFieldIdx) {
 			mRowIdx = aRowIdx;
 			mFieldIdx = aFieldIdx;
 		}
@@ -81,13 +81,24 @@ public class InfoLines {
     }
 
     public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nType) {
-    	mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx] = nType;
+    	if(rangeCheck(infoLineFieldLoc) == true)
+    		mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx] = nType;
     }
     
     public int getFieldType(InfoLineFieldLoc infoLineFieldLoc) {
-    	return mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx];
+    	if(rangeCheck(infoLineFieldLoc) == true)
+    		return mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx];
+    	return ID_FLD_NUL;
     }
 
+    boolean rangeCheck(InfoLineFieldLoc iLFL){
+    	if((iLFL.mRowIdx < 0) || (iLFL.mRowIdx >= mFieldLines.length))
+    		return false;
+    	if((iLFL.mFieldIdx < 0) || (iLFL.mFieldIdx >= mFieldLines[iLFL.mRowIdx].length))
+    		return false;
+        return true;
+    }
+    
     public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY){
         if(posY > aPaint.getTextSize() * 2) {
     		return null;
@@ -113,7 +124,7 @@ public class InfoLines {
     		}
     	}
 
-    	return new InfoLineFieldLoc(nFieldIdx, nRowIdx);
+    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx);
     }
     
     /*** 
