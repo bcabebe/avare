@@ -751,6 +751,7 @@ Redistribution and use in source and binary forms, with or without modification,
 	    <item>Hobbs Flight Timer</item>
 	    <item>Vertical Speed Indicator</item>
 	    <item>Descent Rate to Destination</item>
+	    <item>Odometer</item>
 	</string-array>
 	    
 	<string-array name="TextFieldOptionTitles">
@@ -760,15 +761,16 @@ Redistribution and use in source and binary forms, with or without modification,
 		<item>Ground Speed</item>
 	    <item>Heading</item>
 	    <item>Bearing</item>
-	    <item>Destination</item>
-	    <item>Distance</item>
-	    <item>ETE</item>
-	    <item>ETA</item>
+	    <item>Next</item>
+	    <item>Dist Next</item>
+	    <item>ETE Next</item>
+	    <item>ETA Next</item>
 	    <item>MSL ft</item>
 	    <item>AGL ft</item>
 	    <item>Flight Time</item>
 	    <item>VSI fpm</item>
 	    <item>Dsc Rt fpm</item>
-	</string-array>
+	    <item>Odometer</item>
+   	</string-array>
 
 </resources>

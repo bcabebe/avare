@@ -20,6 +20,7 @@ import com.ds.avare.adsb.TrafficCache;
 import com.ds.avare.flightLog.KMLRecorder;
 import com.ds.avare.gps.*;
 import com.ds.avare.hobbsMeter.FlightTimer;
+import com.ds.avare.hobbsMeter.Odometer;
 import com.ds.avare.network.TFRFetcher;
 import com.ds.avare.place.Area;
 import com.ds.avare.place.Destination;
@@ -168,6 +169,8 @@ public class StorageService extends Service {
      */
     private KMLRecorder mKMLRecorder;
 
+    private Odometer mOdometer;
+    
     /**
      * @author zkhan
      *
@@ -242,6 +245,11 @@ public class StorageService extends Service {
          */
         mKMLRecorder = new KMLRecorder();
 
+        /*
+         * Start the odometer now
+         */
+        mOdometer = new Odometer();
+        
         /*
          * Monitor TFR every hour.
          */
@@ -700,7 +708,10 @@ public class StorageService extends Service {
     public KMLRecorder getKMLRecorder() {
         return mKMLRecorder;
     }
-    
+
+    public Odometer getOdometer() {
+    	return mOdometer;
+    }
     /**
      * 
      * @return

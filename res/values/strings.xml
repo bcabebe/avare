@@ -227,4 +227,5 @@ Redistribution and use in source and binary forms, with or without modification,
     <string name="UseDynamicFieldsSummary">&quot;Allow the top two text lines can be configured dynamically&quot;</string>
     <string name="prefGetRowFormats">RowFormats</string>
     <string name="SelectTextFieldTitle">&quot;Select field to display&quot;</string>
+    <string name="prefOdometer">Odometer</string>
 </resources>

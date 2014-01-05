@@ -25,6 +25,7 @@ import android.graphics.Paint.Align;
 import com.ds.avare.LocationView;
 import com.ds.avare.R;
 import com.ds.avare.StorageService;
+import com.ds.avare.hobbsMeter.Odometer;
 import com.ds.avare.place.Destination;
 import com.ds.avare.storage.Preferences;
 
@@ -83,7 +84,8 @@ public class InfoLines {
     static final int ID_FLD_HOB = 12;
     static final int ID_FLD_VSI = 13;
     static final int ID_FLD_DRT = 14;
-    static final int ID_FLD_MAX = 15;
+    static final int ID_FLD_ODO = 15;
+    static final int ID_FLD_MAX = 16;
     static final String NOVALUE = "     ";
     
     static final double TITLE_TO_TEXT_RATIO = 2.5;
@@ -464,6 +466,9 @@ public class InfoLines {
 		    		double dElev = mLocationView.getElev();
 		    		if (dElev > 0)
 		    			dAGL = mLocationView.getGpsParams().getAltitude() - dElev;
+		    		if(dAGL < 0) {
+		    			dAGL = 0;
+		    		}
 		    		return String.format(Locale.getDefault(), getAglMslFmtString(dAGL), dAGL);
 	    		}
 	    		break;
@@ -486,7 +491,21 @@ public class InfoLines {
 	    		}
 	    		break;
 	    	}
-	    }
+
+	    	case ID_FLD_ODO: {
+	    		if(aTitle == false) {
+		    		StorageService storageService = mLocationView.getStorageService(); 
+		    		if(storageService != null) {
+			    		Odometer odometer = storageService.getOdometer();
+			    		if(odometer != null) {
+			    			double value = odometer.getValue();
+				    		return String.format(Locale.getDefault(), getAglMslFmtString(value), value);
+			    		}
+		    		}
+	    		}
+	    		break;
+	    	}
+    	}
 
     	if(aTitle == true) {
     		String[] fieldTitles = mLocationView.getAppContext().getResources().getStringArray(R.array.TextFieldOptionTitles);
@@ -494,6 +513,11 @@ public class InfoLines {
     	}
 
     	return NOVALUE;
+    }
+    
+    public String[] getFieldOptions()
+    {
+    	return mLocationView.getAppContext().getResources().getStringArray(R.array.TextFieldOptions);
     }
     
     /***
@@ -510,6 +534,8 @@ public class InfoLines {
 			fmtString = " %04.0f";
 		else if(value >= 100)
 			fmtString = " %03.0f ";
+		else 
+			fmtString = " %04.1f";
 		return fmtString;
     }
 
