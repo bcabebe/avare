@@ -17,14 +17,15 @@ import com.ds.avare.position.Projection;
 import com.ds.avare.storage.Preferences;
 
 public class Odometer {
-	private double		mOdometer;	// current value
+	private double		mValue;		// current value
+	private double 		mValueSave;	// value last time we did a save
 	private GpsParams	mGpsParams;	// last used gps parameters
 	
 	public Odometer(){
 	}
 	
 	public double getValue() {
-		return mOdometer;
+		return mValue;
 	}
 	
 	public void updateValue(Preferences pref, GpsParams gpsParams) {
@@ -32,26 +33,30 @@ public class Odometer {
 		// Our first time in means we need to read the current setting from
 		// the preferences
 		if(mGpsParams == null) {
-			mOdometer = pref.getOdometer();
+			mValue = pref.getOdometer();
 			mGpsParams = gpsParams;
+			mValueSave = mValue;
 		} else {
 			
 			// Not the first time, calculate how much distance between current and previous
 			double distance = new Projection(mGpsParams.getLongitude(), mGpsParams.getLatitude(), 
-										  gpsParams.getLongitude(), gpsParams.getLatitude()).getDistance();
+								gpsParams.getLongitude(), gpsParams.getLatitude()).getDistance();
 
 			// if the distance is less than 1/10 mile, then ignore it for now
 			if(distance < .1)
 				return;
 			
-			// Adjust our calculated distance, and if we traveled more than 1 mile, then save it
+			// Adjust our odometer by the calculated distance
 			// for display reasons, roll it over at 100,000 miles
-    		mOdometer += distance;
-    		if (mOdometer > 100000) {
-    			mOdometer -= 100000;
+			mValue += distance;
+    		if (mValue > 100000) {
+    			mValue -= 100000;
     		}
-	    	if(distance > 1) {
-	    		pref.setOdometer(mOdometer);
+    		
+			// If we traveled more than a half mile, then write it to the preferences for safe keeping
+	    	if((mValue - mValueSave) > .5) {
+	    		pref.setOdometer(mValue);
+	    		mValueSave = mValue;
 	    	}
 	    	
 	    	// Set our last used GPS params

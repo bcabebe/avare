@@ -677,10 +677,6 @@ public class Preferences {
 		}
     }
 
-    /**
-     * 
-     * @return
-     */
     public boolean useDynamicFields() {
         return mPref.getBoolean(mContext.getString(R.string.prefUseDynamicFields), false);
     }
@@ -693,10 +689,6 @@ public class Preferences {
     	mPref.edit().putString(mContext.getString(R.string.prefGetRowFormats), rowFormats).commit();
     }
 
-    /**
-     * What type of distance rings are we supposed to show, 0=none, 1=dynamic, 2=static at 2/5/10
-     * @return
-     */
     public double getOdometer() {
     	try {
     		return(Double.parseDouble(mPref.getString(mContext.getString(R.string.prefOdometer), "0")));
@@ -706,6 +698,6 @@ public class Preferences {
     }
 
     public void setOdometer(double value) {
-    	mPref.edit().putString(mContext.getString(R.string.prefGetRowFormats), String.format("%f", value)).commit();
+    	mPref.edit().putString(mContext.getString(R.string.prefOdometer), String.format("%f", value)).commit();
     }
 }

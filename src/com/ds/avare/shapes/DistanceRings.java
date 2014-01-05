@@ -101,7 +101,7 @@ public class DistanceRings {
             if(macro <= 1 && scale.getScaleFactorRaw() > 1) {  
                 ringScale = RINGS_1_2_5;        
             } 
-            if(macro <= 1 && scale.getScaleFactorRaw() < 1) {  
+            else if(macro <= 1 && scale.getScaleFactorRaw() <= 1) {  
                 ringScale = RINGS_2_5_10;
             } 
             else if (macro <= 2) {
