@@ -346,6 +346,10 @@ public class LocationActivity extends Activity implements Observer {
         		
         		_InfoLineFieldLoc = infoLineFieldLoc;
         		
+        		if(GestureInterface.LONG_PRESS == nEvent) {
+        			mLocationView.mInfoLines.longPress(_InfoLineFieldLoc);
+        		}
+        		
         		if(GestureInterface.DOUBLE_TAP == nEvent) {
 
                 	// Create the alert dialog and add the title.

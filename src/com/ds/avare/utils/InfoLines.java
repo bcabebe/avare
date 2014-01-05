@@ -128,6 +128,49 @@ public class InfoLines {
     	}
     }
 
+    /***
+     * A LONG_PRESS gesture over one of the display fields
+     * @param infoLineFieldLoc the field to receive the gesture
+     */
+    public void longPress(InfoLineFieldLoc infoLineFieldLoc)
+    {
+    	if(infoLineFieldLoc == null) {
+    		return;
+    	}
+
+    	// Each field processes the gesture differently.
+    	switch(mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx]) {
+
+    		// Odometer - reset the value to zero
+    		case ID_FLD_ODO: {
+    			Preferences pref = mLocationView.getPref(); 
+	    		if(pref != null) {
+		    		StorageService storageService = mLocationView.getStorageService(); 
+		    		if(storageService != null) {
+			    		Odometer odometer = storageService.getOdometer();
+			    		if(odometer != null) {
+			    			odometer.reset(pref);
+			    		}
+		    		}
+	    		}
+    			break;
+    		}
+
+    		// Hobbs flight meter - reset it to zero
+    		case ID_FLD_HOB: {
+	    		StorageService storageService = mLocationView.getStorageService(); 
+	    		if(storageService != null) {
+	    			storageService.getFlightTimer().reset();
+                }
+	    		break;
+    		}
+
+    		default:
+    			break;
+    	}
+    	return;
+    }
+    
     private void setRowCount()
     {
 	    // Determine how many status rows are being displayed

@@ -760,7 +760,7 @@ Redistribution and use in source and binary forms, with or without modification,
 	    <item></item>
 		<item>Ground Speed</item>
 	    <item>Heading</item>
-	    <item>Bearing</item>
+	    <item>Brg Next</item>
 	    <item>Next</item>
 	    <item>Dist Next</item>
 	    <item>ETE Next</item>

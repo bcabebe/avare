@@ -1800,20 +1800,18 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
             double x = mCurrTouchPoint.getX();
             double y = mCurrTouchPoint.getY();
 
-            /*
+        	InfoLineFieldLoc infoLineFieldLoc = mInfoLines.findField(mPaint, (float)x, (float)y);
+        	if(infoLineFieldLoc != null) {
+            	// We have the row and field. Send the gesture off for processing
+            	mGestureCallBack.gestureCallBack(GestureInterface.LONG_PRESS, infoLineFieldLoc);
+            	return;
+        	}
+
+        	/*
              * In draw, long press has no meaning other than to clear the output from the activity
              */
             if(mDraw) {
                 mGestureCallBack.gestureCallBack(GestureInterface.LONG_PRESS, (LongTouchDestination)null);
-                return;
-            }
-
-            /* If the long press is in the top 2 lines, then clear the HOBBS meter
-             * XXX - perhaps pop up a menu to change the units as well ? Could be a gesture
-             * to bring up a dialog dealing with all things in the top 2 text lines.
-             */
-            if(y < (mPaint.getTextSize() * 2) && mService != null) {
-                mService.getFlightTimer().reset();
                 return;
             }
 

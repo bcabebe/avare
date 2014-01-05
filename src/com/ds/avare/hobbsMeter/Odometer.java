@@ -24,11 +24,36 @@ public class Odometer {
 	public Odometer(){
 	}
 	
+	/***
+	 * Return the current value of the odometer
+	 * @return
+	 */
 	public double getValue() {
 		return mValue;
 	}
 	
+	/***
+	 * Reset the value of the odometer to zero.
+	 * @param pref The preferece object so as to clear the saved value
+	 */
+	public void reset(Preferences pref) {
+		if(pref != null) {
+			mValue = 0;
+			mValueSave = 0;
+			mGpsParams = null;
+			pref.setOdometer(mValue);
+		}
+	}
+
+	/***
+	 * Update the value of the odometer based upon the gpsParams passed in
+	 * @param pref preferences object soas to save the current odometer value
+	 * @param gpsParams current gps locations
+	 */
 	public void updateValue(Preferences pref, GpsParams gpsParams) {
+		if(pref == null || gpsParams == null) {
+			return;
+		}
 		
 		// Our first time in means we need to read the current setting from
 		// the preferences
