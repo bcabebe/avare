@@ -278,17 +278,10 @@ public class InfoLines {
         }
         aPaint.setShadowLayer(aShadow, aShadow, aShadow, Color.BLACK);
 
-		// Now check for an error message. That will overwrite some of the fields on the screen
-        // If we have an error message, that has priority over everything else
-        if(mLocationView.getErrorStatus() != null) {
-        	aPaint.setTextAlign(Align.RIGHT);
-        	aPaint.setColor(Color.RED);
-            canvas.drawText(mLocationView.getErrorStatus(),
-                    mDisplayWidth, dataY - 1, aPaint);
-            return;
-        }
-
-
+        // Two special types of messages that can override what is displayed
+        String errorMessage = mLocationView.getErrorStatus();
+        String priorityMessage = mLocationView.getPriorityMessage();
+        
         // White text that is left aligned
         aPaint.setTextAlign(Align.LEFT);
         aPaint.setColor(aTextColor);
@@ -298,31 +291,43 @@ public class InfoLines {
         if (mDisplayOrientation == ID_DO_PORTRAIT)
         	nStartLine = MAX_INFO_ROWS;
 
-        // Check to see if there is a priority message to display in lieu of
-        // the top line of instrument values
-        int nStartRow = 0;
-        if(mLocationView.getPriorityMessage() != null) {
-        	canvas.drawText(mLocationView.getPriorityMessage(), 0, lineY * 1 - 1, aPaint);
-        	nStartRow = 1;
-        }
-
-        // Time to paint the instrument data
-        for(int row = nStartRow; row < MAX_INFO_ROWS; row++) {
+        // The top row can  be either the priority message or
+        // the configured display values
+		if(priorityMessage != null) {
+        	canvas.drawText(priorityMessage, 0, lineY - 1, aPaint);
+		} else {
 	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
-	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine + row][idx], false), mFieldPosX[idx], lineY * (1 + row) - 1, aPaint);
-	        }
-        }
+	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine][idx], false), 
+	        			mFieldPosX[idx], lineY - 1, aPaint);
 
-        // Now print the titles for each of the instrument areas
-    	aPaint.setTextSize(titleY);
-        for(int row = nStartRow; row < MAX_INFO_ROWS; row++) {
-	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
-	        	String title = getDisplayFieldValue(mFieldLines[nStartLine + row][idx], true);
-		    	canvas.drawText(title, mFieldPosX[idx] + (mFieldWidth - mCharWidth - (int) aPaint.measureText(title)) / 2, lineY  * (1 + row) - dataY + 2, aPaint);
+	        	aPaint.setTextSize(titleY);
+	        	String title = getDisplayFieldValue(mFieldLines[nStartLine][idx], true);
+		    	canvas.drawText(title, mFieldPosX[idx] + 
+		    			(mFieldWidth - mCharWidth - (int) aPaint.measureText(title)) / 2, 
+		    			lineY - dataY + 2, aPaint);
+		    	aPaint.setTextSize(dataY);
 	        }
-	        
-        }
-    	aPaint.setTextSize(dataY);
+		}
+		
+		// The second line is either the red error message or 
+		// the additional line of configured values
+		if(errorMessage != null) {
+        	aPaint.setTextAlign(Align.RIGHT);
+        	aPaint.setColor(Color.RED);
+            canvas.drawText(mLocationView.getErrorStatus(), mDisplayWidth, lineY * 2 - 1, aPaint);
+		} else {
+	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
+	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine + 1][idx], false), 
+	        			mFieldPosX[idx], lineY * 2 - 1, aPaint);
+
+	        	aPaint.setTextSize(titleY);
+	        	String title = getDisplayFieldValue(mFieldLines[nStartLine + 1][idx], true);
+		    	canvas.drawText(title, mFieldPosX[idx] + 
+		    			(mFieldWidth - mCharWidth - (int) aPaint.measureText(title)) / 2, 
+		    			lineY * 2 - dataY + 2, aPaint);
+		    	aPaint.setTextSize(dataY);
+	        }
+		}
     }
 
     /***
