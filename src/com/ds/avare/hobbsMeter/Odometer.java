@@ -51,7 +51,7 @@ public class Odometer {
 	 * @param gpsParams current gps locations
 	 */
 	public void updateValue(Preferences pref, GpsParams gpsParams) {
-		if(pref == null || gpsParams == null) {
+		if(pref == null || gpsParams == null || pref.isSimulationMode()) {
 			return;
 		}
 		
