@@ -1329,7 +1329,7 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         }
         
         if(mPref.useDynamicFields() == true) {
-        	mInfoLines.drawCornerTextsDynamic(canvas, mPaint, mErrorStatus, TEXT_COLOR, TEXT_COLOR_OPPOSITE, SHADOW);
+        	mInfoLines.drawCornerTextsDynamic(canvas, mPaint, TEXT_COLOR, TEXT_COLOR_OPPOSITE, SHADOW);
         } else {
         	drawCornerTexts(canvas);
         }
@@ -1954,6 +1954,21 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
     
     public Context getAppContext() { 
     	return mContext;
+    }
+
+    public String getErrorStatus() {
+    	return mErrorStatus;
+    }
+
+    public String getPriorityMessage() {
+        if(mPointProjection != null) {
+        	String priorityMessage = 
+        			Helper.makeLine2(mPointProjection.getDistance(),
+                    Preferences.distanceConversionUnit, mPointProjection.getGeneralDirectionFrom(mGpsParams.getDeclinition()),
+                    mPointProjection.getBearing(), mGpsParams.getDeclinition());
+        	return priorityMessage;
+        }
+        return null;
     }
     
     /**

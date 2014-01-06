@@ -257,7 +257,7 @@ public class InfoLines {
      * @param aTextColorOpposite opposite
      * @param aShadow shadow radius
      */
-    public void drawCornerTextsDynamic(Canvas canvas, Paint aPaint, String errorStatus, int aTextColor, int aTextColorOpposite, int aShadow)
+    public void drawCornerTextsDynamic(Canvas canvas, Paint aPaint, int aTextColor, int aTextColorOpposite, int aShadow)
     {
     	// If the screen width has changed since the last time, we need to recalc
     	// the positions of the fields
@@ -268,17 +268,6 @@ public class InfoLines {
 		float lineY   = dataY + titleY;
 		float shadowY = lineY * mRowCount;
 
-		// Now check for an error message. That will overwrite some of the fields on the screen
-        // If we have an error message, that has priority over everything else
-        if(errorStatus != null) {
-        	aPaint.setTextAlign(Align.RIGHT);
-        	aPaint.setColor(Color.RED);
-            canvas.drawText(errorStatus,
-                    mDisplayWidth, dataY * MAX_INFO_ROWS, aPaint);
-            return;
-        }
-
-		
     	// Draw the shadowed background on the top 2 lines if we are configured to do so
         if(mLocationView.getPref().shouldShowBackground()) {
         	aPaint.setShadowLayer(0, 0, 0, 0);
@@ -289,6 +278,17 @@ public class InfoLines {
         }
         aPaint.setShadowLayer(aShadow, aShadow, aShadow, Color.BLACK);
 
+		// Now check for an error message. That will overwrite some of the fields on the screen
+        // If we have an error message, that has priority over everything else
+        if(mLocationView.getErrorStatus() != null) {
+        	aPaint.setTextAlign(Align.RIGHT);
+        	aPaint.setColor(Color.RED);
+            canvas.drawText(mLocationView.getErrorStatus(),
+                    mDisplayWidth, dataY - 1, aPaint);
+            return;
+        }
+
+
         // White text that is left aligned
         aPaint.setTextAlign(Align.LEFT);
         aPaint.setColor(aTextColor);
@@ -297,15 +297,25 @@ public class InfoLines {
         int nStartLine = 0;
         if (mDisplayOrientation == ID_DO_PORTRAIT)
         	nStartLine = MAX_INFO_ROWS;
-        
-        for(int row = 0; row < MAX_INFO_ROWS; row++) {
+
+        // Check to see if there is a priority message to display in lieu of
+        // the top line of instrument values
+        int nStartRow = 0;
+        if(mLocationView.getPriorityMessage() != null) {
+        	canvas.drawText(mLocationView.getPriorityMessage(), 0, lineY * 1 - 1, aPaint);
+        	nStartRow = 1;
+        }
+
+        // Time to paint the instrument data
+        for(int row = nStartRow; row < MAX_INFO_ROWS; row++) {
 	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
 	        	canvas.drawText(getDisplayFieldValue(mFieldLines[nStartLine + row][idx], false), mFieldPosX[idx], lineY * (1 + row) - 1, aPaint);
 	        }
         }
 
+        // Now print the titles for each of the instrument areas
     	aPaint.setTextSize(titleY);
-        for(int row = 0; row < MAX_INFO_ROWS; row++) {
+        for(int row = nStartRow; row < MAX_INFO_ROWS; row++) {
 	        for(int idx = 0, max = mFieldPosX.length; idx < max; idx++) {
 	        	String title = getDisplayFieldValue(mFieldLines[nStartLine + row][idx], true);
 		    	canvas.drawText(title, mFieldPosX[idx] + (mFieldWidth - mCharWidth - (int) aPaint.measureText(title)) / 2, lineY  * (1 + row) - dataY + 2, aPaint);

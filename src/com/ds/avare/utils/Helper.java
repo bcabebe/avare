@@ -260,6 +260,12 @@ public class Helper {
         return ret; 
     }
     
+    public static String makeLine2(double distance, String unit, String genDirection, double heading, double variation) {
+        return String.format(Locale.getDefault(), "%3d", (Math.round(distance))) + 
+        			unit + " " + genDirection + " location, steer " + 
+        			Helper.correctConvertHeading(Math.round(getMagneticHeading(heading, variation))) + '\u00B0';
+    }
+
     /**
      * 
      * @param heading
