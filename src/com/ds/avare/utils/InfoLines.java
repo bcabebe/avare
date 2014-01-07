@@ -16,7 +16,6 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -66,7 +65,7 @@ public class InfoLines {
     static final int ID_DO_PORTRAIT  = 1;
 
     // To add new display fields, take the ID_FLD_MAX value, and adjust MAX up by 1. 
-    // ID_FLD_MAX must always be the highest, an ID_FLD_NUL the lowest
+    // ID_FLD_MAX must always be the highest, and ID_FLD_NUL the lowest
     // Ensure that the string-array "TextFieldOptions" is update with the new entry
     // in the proper order
     static final int ID_FLD_NUL = 0;
@@ -98,12 +97,12 @@ public class InfoLines {
      * from the shared preferences
      * @param locationView
      */
-    public InfoLines(LocationView locationView) 
+	public InfoLines(LocationView locationView) 
     {
     	mLocationView = locationView;
     	
-        mFieldLines = new int[4][ID_FLD_MAX];	// 2 Lines for portrait, 2 for landscape
-        String rowFormats = mLocationView.getPref().getRowFormats();	// One config string for all 4 lines
+        mFieldLines = new int[MAX_INFO_ROWS * 2][ID_FLD_MAX];	// separate lines for portrait vs landscape
+        String rowFormats = mLocationView.getPref().getRowFormats();	// One config string for all lines
         String strRows[] = rowFormats.split(" ");	// Split the string to get each row
         for(int rowIdx = 0; rowIdx < strRows.length; rowIdx++) {
 	        String arFields[] = strRows[rowIdx].split(",");		// Split the row string to get each field
@@ -138,6 +137,9 @@ public class InfoLines {
     		return;
     	}
 
+    	// fetch our background storage service
+		StorageService storageService = mLocationView.getStorageService(); 
+
     	// Each field processes the gesture differently.
     	switch(mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx]) {
 
@@ -145,7 +147,6 @@ public class InfoLines {
     		case ID_FLD_ODO: {
     			Preferences pref = mLocationView.getPref(); 
 	    		if(pref != null) {
-		    		StorageService storageService = mLocationView.getStorageService(); 
 		    		if(storageService != null) {
 			    		Odometer odometer = storageService.getOdometer();
 			    		if(odometer != null) {
@@ -158,15 +159,14 @@ public class InfoLines {
 
     		// Hobbs flight meter - reset it to zero
     		case ID_FLD_HOB: {
-	    		StorageService storageService = mLocationView.getStorageService(); 
 	    		if(storageService != null) {
 	    			storageService.getFlightTimer().reset();
                 }
 	    		break;
     		}
 
+    		// Current destination - clear it out.
     		case ID_FLD_DST: {
-	    		StorageService storageService = mLocationView.getStorageService(); 
 	    		if(storageService != null) {
 	    			storageService.setDestination(null);
                 }
@@ -456,15 +456,16 @@ public class InfoLines {
 		    		if(mLocationView.getStorageService() != null) {
 			    		if(mLocationView.getStorageService().getDestination() != null) {
 			    			String name = mLocationView.getStorageService().getDestination().getID();
-			                if(name.contains("&")) {
+			                if(name.contains("&")) {		// Change a direct coordinate to GPS
 			                    name = Destination.GPS;
-			                } else if (name.length() > 5) {
+			                } else if (name.length() > 5) {	// Truncate name if larger than 5 chars
 			                    name = name.substring(0, 4);
 			                }
-			                if(name.length() <= 3)
+			                if(name.length() <= 3) {			// Pad the name so it shows nicer
 			                	name = ' ' + name + ' ';
-			                if(name.length() == 4)
+			                } else if(name.length() == 4) { 
 			                	name = ' ' + name;
+			                }
 			                return name;
 			    		}
 		    		}
