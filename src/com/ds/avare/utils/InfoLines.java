@@ -165,6 +165,14 @@ public class InfoLines {
 	    		break;
     		}
 
+    		case ID_FLD_DST: {
+	    		StorageService storageService = mLocationView.getStorageService(); 
+	    		if(storageService != null) {
+	    			storageService.setDestination(null);
+                }
+	    		break;
+    		}
+    		
     		default:
     			break;
     	}
@@ -447,7 +455,17 @@ public class InfoLines {
 	    		if(aTitle == false) {
 		    		if(mLocationView.getStorageService() != null) {
 			    		if(mLocationView.getStorageService().getDestination() != null) {
-			    			return ' ' + mLocationView.getStorageService().getDestination().getID() + ' ';
+			    			String name = mLocationView.getStorageService().getDestination().getID();
+			                if(name.contains("&")) {
+			                    name = Destination.GPS;
+			                } else if (name.length() > 5) {
+			                    name = name.substring(0, 4);
+			                }
+			                if(name.length() <= 3)
+			                	name = ' ' + name + ' ';
+			                if(name.length() == 4)
+			                	name = ' ' + name;
+			                return name;
 			    		}
 		    		}
 	    		}

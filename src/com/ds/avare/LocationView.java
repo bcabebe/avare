@@ -1970,7 +1970,10 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
         }
         return null;
     }
-    
+
+    public float getThreshold() {
+    	return mThreshold;
+    }
     /**
      * 
      */
