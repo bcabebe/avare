@@ -48,10 +48,10 @@ public class InfoLines {
 		
 		private InfoLineFieldLoc(int aRowIdx, int aFieldIdx, String[] aOptions, int aSelected) 
 		{
-			mRowIdx = aRowIdx;
+			mRowIdx   = aRowIdx;
 			mFieldIdx = aFieldIdx;
-			mOptions = aOptions;
-			mSelected = aSelected;
+			mOptions  = aOptions;	// What valid options that are for this field
+			mSelected = aSelected;	// Currently selected option in the mOptions list
 		}
 		
 		public String[] getOptions() {
@@ -111,7 +111,7 @@ public class InfoLines {
      * @param aPaint
      * @param posX
      * @param posY
-     * @return an InfoLineFieldLoc object which identifies the field or null
+     * @return an InfoLineFieldLoc object which identifies the field, its choices and current selection OR null
      */
     public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY)
     {
@@ -149,16 +149,16 @@ public class InfoLines {
     	// Fetch the global option list of what this field could be
     	String[] optionList = mLocationView.getAppContext().getResources().getStringArray(R.array.TextFieldOptions);
     	
-    	// The available options list
+    	// Build up the available options list
     	List<String> optionAvail = new ArrayList<String>();
     	
-    	// Now remove all of the items that are currently being displayed
+    	// Loop through the master list and include the item only under certain conditions
     	for(int idx = 0, maxIdx = optionList.length; idx < maxIdx; idx++) {
     		if(idx == 0) {
-    	    	optionAvail.add(optionList[0]);		// always allow the null
+    	    	optionAvail.add(optionList[0]);		// always allow the NONE
     		} else if(idx == nSelected) {
     			optionAvail.add(optionList[idx]);	// always add what it currently IS
-    			nSelected = optionAvail.size() - 1;
+    			nSelected = optionAvail.size() - 1;	// reflect the selected position in the new list
     		} else if(isShowing(idx) == false) {
     			optionAvail.add(optionList[idx]);	// add only if we are not showing
     		}
@@ -166,11 +166,9 @@ public class InfoLines {
 
     	// OK, the new option list is built and we have what should currently be 
     	// selected in there. Return this info to the caller
-    	String[] a = optionAvail.toArray(new String[optionAvail.size()]);
-    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx, a, nSelected);
-    	
-//    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx, (String[]) optionAvail.toArray(), nSelected);
-    }
+    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx, 
+    			optionAvail.toArray(new String[optionAvail.size()]), nSelected);
+   }
 
     /***
      * Set the desired field to the type specified. It's a few hoops to get it from
