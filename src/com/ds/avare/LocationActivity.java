@@ -357,8 +357,8 @@ public class LocationActivity extends Activity implements Observer {
                 	builder.setTitle(R.string.SelectTextFieldTitle);
 
                 	// The list of items to chose from. When a selection is made, save it off locally
-                	builder.setSingleChoiceItems(mLocationView.mInfoLines.getFieldOptions(), 
-                			mLocationView.mInfoLines.getFieldType(_InfoLineFieldLoc), 
+                	builder.setSingleChoiceItems(_InfoLineFieldLoc.getOptions(), 
+                			_InfoLineFieldLoc.getSelected(), 
                     		new DialogInterface.OnClickListener() {
 	                    		@Override
 		                        public void onClick(DialogInterface dialog, int which) {

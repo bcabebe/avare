@@ -12,7 +12,9 @@ Redistribution and use in source and binary forms, with or without modification,
 
 package com.ds.avare.utils;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -41,11 +43,23 @@ public class InfoLines {
 	public class InfoLineFieldLoc {
 		int mRowIdx;
 		int mFieldIdx;
+		String[] mOptions;
+		int mSelected;
 		
-		private InfoLineFieldLoc(int aRowIdx, int aFieldIdx) 
+		private InfoLineFieldLoc(int aRowIdx, int aFieldIdx, String[] aOptions, int aSelected) 
 		{
 			mRowIdx = aRowIdx;
 			mFieldIdx = aFieldIdx;
+			mOptions = aOptions;
+			mSelected = aSelected;
+		}
+		
+		public String[] getOptions() {
+			return mOptions;
+		}
+		
+		public int getSelected() {
+			return mSelected;
 		}
 	}
 	
@@ -92,6 +106,129 @@ public class InfoLines {
     static final int MAX_INFO_ROWS = 2;
     
     /***
+     * Is there a field to display at the indicated location. To figure this out we
+     * need the X/Y of the location along with the paint object (which determines text size)
+     * @param aPaint
+     * @param posX
+     * @param posY
+     * @return an InfoLineFieldLoc object which identifies the field or null
+     */
+    public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY)
+    {
+		float dataY   = aPaint.getTextSize();
+		float titleY  = dataY / (float) TITLE_TO_TEXT_RATIO;
+		float lineY   = dataY + titleY;
+    	
+        if(posY > lineY * MAX_INFO_ROWS) {
+    		return null;
+        }
+        
+    	// Did we tap on Row0 or Row1 ?
+    	int nRowIdx = 0;
+    	if(posY > lineY) {
+    		nRowIdx = 1;
+    	}
+
+    	// Make the adjustment here in case we are in PORTRAIT display mode
+    	if(mDisplayOrientation == ID_DO_PORTRAIT) {
+    		nRowIdx += MAX_INFO_ROWS;
+    	}
+    	
+    	// Find out what field we tapped over
+    	int nFieldIdx =  mFieldPosX.length - 1;
+    	for(int idx = 1; idx < mFieldPosX.length; idx++) {
+    		if(mFieldPosX[idx] > posX) {
+    			nFieldIdx = idx - 1;
+    			break;
+    		}
+    	}
+
+    	// Get our currently displayed value for this field
+    	int nSelected = mFieldLines[nRowIdx][nFieldIdx];
+
+    	// Fetch the global option list of what this field could be
+    	String[] optionList = mLocationView.getAppContext().getResources().getStringArray(R.array.TextFieldOptions);
+    	
+    	// The available options list
+    	List<String> optionAvail = new ArrayList<String>();
+    	
+    	// Now remove all of the items that are currently being displayed
+    	for(int idx = 0, maxIdx = optionList.length; idx < maxIdx; idx++) {
+    		if(idx == 0) {
+    	    	optionAvail.add(optionList[0]);		// always allow the null
+    		} else if(idx == nSelected) {
+    			optionAvail.add(optionList[idx]);	// always add what it currently IS
+    			nSelected = optionAvail.size() - 1;
+    		} else if(isShowing(idx) == false) {
+    			optionAvail.add(optionList[idx]);	// add only if we are not showing
+    		}
+    	}
+
+    	// OK, the new option list is built and we have what should currently be 
+    	// selected in there. Return this info to the caller
+    	String[] a = optionAvail.toArray(new String[optionAvail.size()]);
+    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx, a, nSelected);
+    	
+//    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx, (String[]) optionAvail.toArray(), nSelected);
+    }
+
+    /***
+     * Set the desired field to the type specified. It's a few hoops to get it from
+     * what it is, to what it needs to be.
+     * @param infoLineFieldLoc what field to change
+     * @param nType what type to set it to
+     */
+    public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nSelected) 
+    {
+    	if(rangeCheck(infoLineFieldLoc) == true) {	// Make sure field in range
+    		
+    		// Fetch the string from the index passed in
+    		String option = infoLineFieldLoc.mOptions[nSelected];
+    		
+        	// Fetch the global option list of what this field could be
+        	String[] optionList = mLocationView.getAppContext().getResources().getStringArray(R.array.TextFieldOptions);
+        	
+        	// Find out the index of the new selection within the master list
+        	for(int idx = 0, maxIdx = optionList.length; idx < maxIdx; idx++) {
+        		
+        		// If we find the exact match, then set the index, save and re-calc a few things
+        		if(optionList[idx].contentEquals(option) == true) {
+    	    		mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx] = idx;
+    	    		mLocationView.getPref().setRowFormats(buildConfigString());	// Save to storage
+    	    		setRowCount(); // A row may have been totally turned off
+    	    		return;
+        		}
+        	}
+    	}
+    }
+
+    /***
+     * Is this type of field already on the display ? 
+     * @param nFieldType Type of field to search for
+     * @return true/false to indicate it is already shown at another location
+     */
+    private boolean isShowing(int nFieldType)
+    {
+    	int nRowIdx = 0;
+    	
+    	// Make the adjustment here in case we are in PORTRAIT display mode
+    	if(mDisplayOrientation == ID_DO_PORTRAIT) {
+    		nRowIdx += MAX_INFO_ROWS;
+    	}
+
+    	// Loop through the 2 entire status lines that are configured for
+    	// this display mode. Return true if we find it in either
+    	for(int idx = 0; idx < MAX_INFO_ROWS; idx++) {
+    		for(int fldIdx = 0, maxIdx = mFieldLines[idx].length; fldIdx < maxIdx; fldIdx++) {
+    			if(mFieldLines[idx + nRowIdx][fldIdx] == nFieldType) {
+    				return true;
+    			}
+    		}
+    	}
+    	return false;
+    }
+    
+    /***
      * Construct this object passing in the LocationView that
      * did the creation. The fields are defaulted to what is read
      * from the shared preferences
@@ -111,20 +248,6 @@ public class InfoLines {
 	        }
         }
         setRowCount();	// Determine how many rows to use
-    }
-
-    /***
-     * Set the desired field to the type specified
-     * @param infoLineFieldLoc what field to change
-     * @param nType what type to set it to
-     */
-    public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nType) 
-    {
-    	if(rangeCheck(infoLineFieldLoc) == true) {	// Make sure field in range
-    		mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx] = nType;
-    		mLocationView.getPref().setRowFormats(buildConfigString());	// Save to storage
-    		setRowCount(); // A row may have been totally turned off
-    	}
     }
 
     /***
@@ -196,18 +319,6 @@ public class InfoLines {
 		}
 	}
     
-	/***
-	 * Return the type ID of the field in question
-	 * @param infoLineFieldLoc
-	 * @return
-	 */
-    public int getFieldType(InfoLineFieldLoc infoLineFieldLoc) 
-    {
-    	if(rangeCheck(infoLineFieldLoc) == true)
-    		return mFieldLines[infoLineFieldLoc.mRowIdx][infoLineFieldLoc.mFieldIdx];
-    	return ID_FLD_NUL;
-    }
-
     boolean rangeCheck(InfoLineFieldLoc iLFL)
     {
     	if((iLFL.mRowIdx < 0) || (iLFL.mRowIdx >= mFieldLines.length))
@@ -215,47 +326,6 @@ public class InfoLines {
     	if((iLFL.mFieldIdx < 0) || (iLFL.mFieldIdx >= mFieldLines[iLFL.mRowIdx].length))
     		return false;
         return true;
-    }
-
-    /***
-     * Is there a field to display at the indicated location. To figure this out we
-     * need the X/Y of the location along with the paint object (which determines text size)
-     * @param aPaint
-     * @param posX
-     * @param posY
-     * @return an InfoLineFieldLoc object which identifies the field or null
-     */
-    public InfoLineFieldLoc findField(Paint aPaint, float posX, float posY)
-    {
-		float dataY   = aPaint.getTextSize();
-		float titleY  = dataY / (float) TITLE_TO_TEXT_RATIO;
-		float lineY   = dataY + titleY;
-    	
-        if(posY > lineY * MAX_INFO_ROWS) {
-    		return null;
-        }
-        
-    	// Did we tap on Row0 or Row1 ?
-    	int nRowIdx = 0;
-    	if(posY > lineY) {
-    		nRowIdx = 1;
-    	}
-
-    	// Make the adjustment here in case we are in PORTRAIT display mode
-    	if(mDisplayOrientation == ID_DO_PORTRAIT) {
-    		nRowIdx += MAX_INFO_ROWS;
-    	}
-    	
-    	// Find out what field we tapped over
-    	int nFieldIdx =  mFieldPosX.length - 1;
-    	for(int idx = 1; idx < mFieldPosX.length; idx++) {
-    		if(mFieldPosX[idx] > posX) {
-    			nFieldIdx = idx - 1;
-    			break;
-    		}
-    	}
-
-    	return new InfoLineFieldLoc(nRowIdx, nFieldIdx);
     }
 
     /***
@@ -591,11 +661,6 @@ public class InfoLines {
     	}
 
     	return NOVALUE;
-    }
-    
-    public String[] getFieldOptions()
-    {
-    	return mLocationView.getAppContext().getResources().getStringArray(R.array.TextFieldOptions);
     }
     
     /***
