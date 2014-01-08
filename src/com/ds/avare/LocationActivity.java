@@ -360,9 +360,9 @@ public class LocationActivity extends Activity implements Observer {
                 	builder.setSingleChoiceItems(mLocationView.mInfoLines.getFieldOptions(), 
                 			mLocationView.mInfoLines.getFieldType(_InfoLineFieldLoc), 
                     		new DialogInterface.OnClickListener() {
-                    		@Override
-	                        public void onClick(DialogInterface dialog, int which) {
-	                        	_nNewSelection = which;	
+	                    		@Override
+		                        public void onClick(DialogInterface dialog, int which) {
+		                        	_nNewSelection = which;	
 	                        }
                     });
                     
@@ -382,7 +382,7 @@ public class LocationActivity extends Activity implements Observer {
                     });
                     
                 	// Create and show the dialog now
-                	AlertDialog dialog = builder.create();                	
+                	AlertDialog dialog = builder.create();
                 	dialog.show();
                 }
         	}

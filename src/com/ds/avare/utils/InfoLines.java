@@ -168,7 +168,9 @@ public class InfoLines {
     		// Current destination - clear it out.
     		case ID_FLD_DST: {
 	    		if(storageService != null) {
-	    			storageService.setDestination(null);
+	    			if(storageService.getDestination() != null) {
+	    				storageService.setDestination(null);
+	    			}
                 }
 	    		break;
     		}
@@ -260,7 +262,6 @@ public class InfoLines {
      * This method draws the top two lines of the display.
      * @param canvas
      * @param aPaint for what text to use
-     * @param errorStatus If not null, this text is displayed over top of any data
      * @param aTextColor text color
      * @param aTextColorOpposite opposite
      * @param aShadow shadow radius
