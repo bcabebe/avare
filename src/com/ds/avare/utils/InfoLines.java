@@ -130,9 +130,7 @@ public class InfoLines {
     	}
 
     	// Make the adjustment here in case we are in PORTRAIT display mode
-    	if(mDisplayOrientation == ID_DO_PORTRAIT) {
-    		nRowIdx += MAX_INFO_ROWS;
-    	}
+		nRowIdx += (mDisplayOrientation == ID_DO_LANDSCAPE) ? 0 : MAX_INFO_ROWS;
     	
     	// Find out what field we tapped over
     	int nFieldIdx =  mFieldPosX.length - 1;
@@ -174,7 +172,7 @@ public class InfoLines {
      * Set the desired field to the type specified. It's a few hoops to get it from
      * what it is, to what it needs to be.
      * @param infoLineFieldLoc what field to change
-     * @param nType what type to set it to
+     * @param nSelected selection index of the new field content
      */
     public void setFieldType(InfoLineFieldLoc infoLineFieldLoc, int nSelected) 
     {
@@ -207,12 +205,7 @@ public class InfoLines {
      */
     private boolean isShowing(int nFieldType)
     {
-    	int nRowIdx = 0;
-    	
-    	// Make the adjustment here in case we are in PORTRAIT display mode
-    	if(mDisplayOrientation == ID_DO_PORTRAIT) {
-    		nRowIdx += MAX_INFO_ROWS;
-    	}
+		int nRowIdx = (mDisplayOrientation == ID_DO_LANDSCAPE) ? 0 : MAX_INFO_ROWS;
 
     	// Loop through the 2 entire status lines that are configured for
     	// this display mode. Return true if we find it in either
@@ -310,8 +303,7 @@ public class InfoLines {
 		for(int rowIdx = 0, rowMax = MAX_INFO_ROWS; rowIdx < rowMax; rowIdx++) {
 			for(int fldIdx = 0, fldMax = mFieldLines[baseRowIdx + rowIdx].length; fldIdx < fldMax; fldIdx++) {
 				if(mFieldLines[baseRowIdx + rowIdx][fldIdx] != ID_FLD_NUL) {
-					mRowCount++;
-					break;
+					mRowCount = (rowIdx + 1);
 				}
 			}
 		}
@@ -364,9 +356,7 @@ public class InfoLines {
         aPaint.setColor(aTextColor);
 
         // Lines 0/1 are for landscape, 2/3 for portrait
-        int nStartLine = 0;
-        if (mDisplayOrientation == ID_DO_PORTRAIT)
-        	nStartLine = MAX_INFO_ROWS;
+		int nStartLine = (mDisplayOrientation == ID_DO_LANDSCAPE) ? 0 : MAX_INFO_ROWS;
 
         // The top row can  be either the priority message or
         // the configured display values
