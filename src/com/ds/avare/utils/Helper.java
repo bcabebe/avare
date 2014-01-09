@@ -136,7 +136,7 @@ public class Helper {
      */
     public static String calculateAltitudeFromThreshold(float threshold) {
         double altitude = (threshold) * Preferences.heightConversion * 50.0;
-        return(String.format(Locale.getDefault(), "%dft", (int)altitude));
+        return(String.format(Locale.getDefault(), "%d", (int)altitude));
     }
 
     /**
@@ -152,7 +152,7 @@ public class Helper {
             altitude = 0;
         }
         if(valid) {
-            return(String.format(Locale.getDefault(), "%dft", (int)altitude));
+            return(String.format(Locale.getDefault(), "%d", (int)altitude));
         }
         return("");
     }
@@ -288,6 +288,20 @@ public class Helper {
         return val.replaceFirst("^0+(?!$)", ""); 
     }
     
+    public static String centerString(String input, int size) {
+    	char[] spaces = new char[size + 1];
+    	for(int idx = 0; idx < spaces.length - 1; idx++) {
+    		spaces[idx] = ' ';
+    	}
+    	
+    	String strEmpty = new String(spaces);
+    	
+    	int diff = size - input.length();
+    	int trailing = diff / 2;
+    	int leading = trailing + diff % 2;
+
+    	return strEmpty.substring(0,  leading) + input + strEmpty.substring(0,  trailing);
+    }
     /**
      * 
      * @param variation

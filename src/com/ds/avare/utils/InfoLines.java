@@ -590,22 +590,18 @@ public class InfoLines {
 
 	    	case ID_FLD_MSL: {
 	    		if(aTitle == false) {
-		    		double alt = mLocationView.getGpsParams().getAltitude();
-		    		return String.format(Locale.getDefault(), getAglMslFmtString(alt), alt);
+	    			return Helper.centerString(
+	    					Helper.calculateAltitudeFromThreshold(
+	    							mLocationView.getThreshold()), 5); 
 	    		}
 	    		break;
 	    	}
 	    	
 	    	case ID_FLD_AGL: {
 	    		if(aTitle == false) {
-		    		double dAGL = 0;
-		    		double dElev = mLocationView.getElev();
-		    		if (dElev > 0)
-		    			dAGL = mLocationView.getGpsParams().getAltitude() - dElev;
-		    		if(dAGL < 0) {
-		    			dAGL = 0;
-		    		}
-		    		return String.format(Locale.getDefault(), getAglMslFmtString(dAGL), dAGL);
+	    			return Helper.centerString(
+	    					Helper.calculateAGLFromThreshold(mLocationView.getThreshold(), 
+	    							(float)mLocationView.getElev()), 5);
 	    		}
 	    		break;
 	    	}

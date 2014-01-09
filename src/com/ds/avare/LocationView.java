@@ -893,12 +893,12 @@ public class LocationView extends View implements MultiTouchObjectCanvas<Object>
          */
         if(mPointProjection == null && !mPref.isSimulationMode() && mPref.shouldShowAGLMSL()) {
             mRunwayPaint.setColor(Color.WHITE);
-            String altitude = Helper.calculateAltitudeFromThreshold(mThreshold);
+            String altitude = Helper.calculateAltitudeFromThreshold(mThreshold) + "ft";
 
             /*
              * Add AGL
              */
-            String agl = Helper.calculateAGLFromThreshold(mThreshold, (float)mElev);
+            String agl = Helper.calculateAGLFromThreshold(mThreshold, (float)mElev) + "ft";
             if(!agl.equals("")) {
                 altitude += "/" + agl;
             }
