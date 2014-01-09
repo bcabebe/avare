@@ -104,7 +104,8 @@ public class InfoLines {
     static final double TITLE_TO_TEXT_RATIO = 2.5;
 
     static final int MAX_INFO_ROWS = 2;
-    
+    static final int MAX_FIELD_SIZE_IN_CHARS = 5;
+
     /***
      * Is there a field to display at the indicated location. To figure this out we
      * need the X/Y of the location along with the paint object (which determines text size)
@@ -472,8 +473,9 @@ public class InfoLines {
 	    	
 	    	case ID_FLD_SPD: {
 	    		if(aTitle == false) {
-		    		return String.format(Locale.getDefault(), "%3.0f%s", mLocationView.getGpsParams().getSpeed(), 
-		    				Preferences.speedConversionUnit);
+	    			return Helper.centerString(
+	    						String.format(Locale.getDefault(), "%.0f%s", mLocationView.getGpsParams().getSpeed(), 
+	    								Preferences.speedConversionUnit), MAX_FIELD_SIZE_IN_CHARS);
 	    		}
 	    		break;
 	    	}
@@ -520,12 +522,7 @@ public class InfoLines {
 			                } else if (name.length() > 5) {	// Truncate name if larger than 5 chars
 			                    name = name.substring(0, 4);
 			                }
-			                if(name.length() <= 3) {			// Pad the name so it shows nicer
-			                	name = ' ' + name + ' ';
-			                } else if(name.length() == 4) { 
-			                	name = ' ' + name;
-			                }
-			                return name;
+			                return Helper.centerString(name,  MAX_FIELD_SIZE_IN_CHARS);
 			    		}
 		    		}
 	    		}
@@ -536,9 +533,10 @@ public class InfoLines {
 	    		if(aTitle == false) {
 		    		if(mLocationView.getStorageService() != null) {
 			    		if(mLocationView.getStorageService().getDestination() != null) {
-			        		return String.format(Locale.getDefault(), "%3.0f%s", 
+			        		return Helper.centerString(
+			        				String.format(Locale.getDefault(), "%.0f%s", 
 			        				mLocationView.getStorageService().getDestination().getDistance(), 
-			        				Preferences.distanceConversionUnit);
+			        				Preferences.distanceConversionUnit), MAX_FIELD_SIZE_IN_CHARS);
 			    		}
 		    		}
 	    		}
@@ -592,7 +590,7 @@ public class InfoLines {
 	    		if(aTitle == false) {
 	    			return Helper.centerString(
 	    					Helper.calculateAltitudeFromThreshold(
-	    							mLocationView.getThreshold()), 5); 
+	    							mLocationView.getThreshold()), MAX_FIELD_SIZE_IN_CHARS); 
 	    		}
 	    		break;
 	    	}
@@ -601,7 +599,7 @@ public class InfoLines {
 	    		if(aTitle == false) {
 	    			return Helper.centerString(
 	    					Helper.calculateAGLFromThreshold(mLocationView.getThreshold(), 
-	    							(float)mLocationView.getElev()), 5);
+	    							(float)mLocationView.getElev()), MAX_FIELD_SIZE_IN_CHARS);
 	    		}
 	    		break;
 	    	}
@@ -631,7 +629,7 @@ public class InfoLines {
 			    		Odometer odometer = storageService.getOdometer();
 			    		if(odometer != null) {
 			    			double value = odometer.getValue();
-				    		return String.format(Locale.getDefault(), getAglMslFmtString(value), value);
+				    		return String.format(Locale.getDefault(), getFmtString(value), value);
 			    		}
 		    		}
 	    		}
@@ -652,7 +650,7 @@ public class InfoLines {
      * @param value 
      * @return
      */
-    private String getAglMslFmtString(double value)
+    private String getFmtString(double value)
     {
 		String fmtString = "";
 		if(value >= 9999)
