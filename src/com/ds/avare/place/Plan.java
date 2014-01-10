@@ -286,7 +286,7 @@ public class Plan {
                 }
             }   
         }
-        mEte = Helper.calculateEte(mDistance, params.getSpeed());
+        mEte = Helper.calculateEte(mDistance, params.getSpeed(), mBearing, params.getBearing());
         mLastLocation = params;
     }
 

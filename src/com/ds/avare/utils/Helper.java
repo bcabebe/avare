@@ -42,48 +42,118 @@ import android.view.WindowManager;
  */
 public class Helper {
 
-    public static String calculateEte(double distance, double speed) {
-        String ete = "--:--"; 
-        if(0 == speed) {
-            return ete;
-        }
-        int etehr = (int)(distance / speed);
-        int etemin =  (int)Math.round((distance / speed - (double)etehr) * 60);
-        if(etehr > 99) {
-            return "XX:XX";
-        }
-        else {
-            String hr = String.format(Locale.getDefault(), "%02d", etehr);
-            String min = String.format(Locale.getDefault(), "%02d", etemin);
-            ete = new String(hr + ":" + min);
-        }
-        return ete;
-    }
-    
-    public static String calculateEta(TimeZone timeZone, double distance, double speed) {
+	/***
+	 * Fetch the raw estimated time enroute given the input parameters
+	 * @param distance - how far to the target
+	 * @param speed - how fast we are moving
+	 * @param bearing - direction to target
+	 * @param heading - direction of movement
+	 * @return int value of HR * 100 + MIN for the ete, -1 if not applicable
+	 */
+	private static int fetchRawEte(double distance, double speed, double bearing, double heading) {
+        // We can't assume that we are heading DIRECTLY for the destination, so 
+        // we need to figure out the multiply factor by taking the COS of the difference
+        // between the bearing and the heading.
+		double angDif = angularDifference(heading, bearing);
+		
+		// If the difference is 90 or greater, then ETE means nothing as we are not
+		// closing on the target
+		if(angDif >= 90)
+			return -1;
 
-        if(0 == speed) {
+		// Calculate the actual relative speed closing on the target
+        double xFactor  = Math.cos(angDif * Math.PI / 180);
+        double eteTotal = distance / (speed * xFactor);
+
+        // Break that down into hours and minutes
+        int eteHr = (int)eteTotal;
+        int eteMin =  (int)Math.round((eteTotal - (double)eteHr) * 60);
+
+        // account for the minutes being 60
+        if(eteMin >= 60) { eteHr++; eteMin -= 60; }
+        
+        // Return with our estimate
+        return eteHr * 100 + eteMin;
+	}
+
+	/***
+	 * Fetch the estimate travel time to the indicated target
+	 * @param distance - how far to the target
+	 * @param speed - how fast we are moving
+	 * @param bearing - direction to target
+	 * @param heading - direction of movement
+	 * @return String - "HH:MM" time to the target
+	 */
+    public static String calculateEte(double distance, double speed, double bearing, double heading) {
+
+    	// Fetch the eteRaw value
+    	int eteRaw = fetchRawEte(distance, speed, bearing, heading);
+
+    	// If no speed or an invalid eteRaw, then return the empty display value
+        if(0 == speed || eteRaw == -1){
             return "--:--";
         }
+
+        // Break the eteRaw out into hours and minutes
+        int eteHr  = eteRaw / 100;
+        int eteMin = eteRaw %100;
         
-        int eteHr = (int)(distance / speed);
-        int eteMn =  (int)Math.round((distance / speed - (double)eteHr) * 60);
+        // Hours greater than 99 are not displayable
+        if(eteHr > 99) {
+            return "XX:XX";
+        }
+        
+        // Format the hours and minutes en router
+        String hr = String.format(Locale.getDefault(), "%02d", eteHr);
+        String min = String.format(Locale.getDefault(), "%02d", eteMin);
+
+        // BUit the string for return
+        return hr + ":" + min;
+    }
+
+    /***
+	 * Fetch the estimate current time of arrival at the destination
+	 * @param timeZone - The timezone at the destination
+	 * @param distance - how far to the target
+	 * @param speed - how fast we are moving
+	 * @param bearing - direction to target
+	 * @param heading - direction of movement
+	 * @return String - "HH:MM" current time at the target
+     */
+    public static String calculateEta(TimeZone timeZone, double distance, double speed, double bearing, double heading) {
+
+    	// fetch the raw ETE
+        int eteRaw = fetchRawEte(distance, speed, bearing, heading);
+
+        // If no speed, or the eteRaw is meaningless, then return an empty display string
+        if(0 == speed || eteRaw == -1){
+            return "--:--";
+        }
+
+        // Break the hours and minutes out
+        int eteHr  = eteRaw / 100;
+        int eteMin = eteRaw %100;
+
+        // Hours greater than 99 are not displayable
         if(eteHr > 99) {
             return "XX:XX";
         }
 
         // Get the current local time hours and minutes
         int etaHr = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int etaMn = Calendar.getInstance().get(Calendar.MINUTE);
-        
-        etaMn += eteMn;	// Add the estimated minutes enroute to "now"
-        if(etaMn > 59) { etaMn -= 60; etaHr++; }	// account for minute rollover
-        etaHr += eteHr;	// Now add the hours enroute
-        if(etaHr > 23) { etaHr -= 24; }	// account for midnight rollover
-        
-        String strHr = String.format(Locale.getDefault(), "%02d", etaHr);
-        String strMn = String.format(Locale.getDefault(), "%02d", etaMn);
+        int etaMin = Calendar.getInstance().get(Calendar.MINUTE);
 
+        // Add in our ETE to the current time, accounting for rollovers
+        etaMin += eteMin;	// Add the estimated minutes enroute to "now"
+        if(etaMin > 59) { etaMin -= 60; etaHr++; }	// account for minute rollover
+        etaHr += eteHr;	// Now add the hours enroute
+        while(etaHr > 23) { etaHr -= 24; }	// account for midnight rollover
+
+        // Format the hours and minutes
+        String strHr = String.format(Locale.getDefault(), "%02d", etaHr);
+        String strMn = String.format(Locale.getDefault(), "%02d", etaMin);
+
+        // Build string of return
         return strHr + ":" + strMn;
     }
 
@@ -641,6 +711,20 @@ public class Helper {
     public static float getDpiToPix(Context ctx) {
         return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 1, 
                 ctx.getResources().getDisplayMetrics());
+    }
+
+    /** Calculate the absolute angular difference between the two headings
+     * 
+     * @param hdg angle 1 in degrees (typically the heading)
+     * @param brg angle 2 in degrees (typically the bearing)
+     * @return difference between hdg and brg in degrees
+     */
+    public static double angularDifference(double hdg, double brg) {
+    	double absDiff = Math.abs(hdg - brg);
+    	if(absDiff > 180) {
+    		return 360 - absDiff;
+    	}
+    	return absDiff;
     }
 
 }
