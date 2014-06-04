@@ -92,8 +92,8 @@ public class DataSource {
      * @param name
      * @param params
      */
-    public void findDestination(String name, String type, LinkedHashMap<String, String> params, LinkedList<Runway> runways, LinkedHashMap<String, String> freq,  LinkedList<Awos> awos) {
-        dbHelper.findDestination(name, type, params, runways, freq, awos);
+    public void findDestination(String name, String type, String dbType, LinkedHashMap<String, String> params, LinkedList<Runway> runways, LinkedHashMap<String, String> freq,  LinkedList<Awos> awos) {
+        dbHelper.findDestination(name, type, dbType, params, runways, freq, awos);
     }
     
     /**
@@ -148,6 +148,16 @@ public class DataSource {
      */
     public void search(String name, LinkedHashMap<String, String> params) {
         dbHelper.search(name, params);    
+    }
+
+    /**
+     * 
+     * @param name
+     * @param params
+     * @return
+     */
+    public StringPreference searchOne(String name) {
+        return dbHelper.searchOne(name);    
     }
 
     /**
@@ -255,9 +265,28 @@ public class DataSource {
      * @param name
      * @return
      */
+    public LinkedList<String> findRunways(String name) {
+        return  dbHelper.findRunways(name);
+    }
+
+    /**
+     * 
+     * @param name
+     * @return
+     */
     public LinkedList<String> findFrequencies(String name) {
         return  dbHelper.findFrequencies(name);
     }
+
+    /**
+     * 
+     * @param name
+     * @return
+     */
+    public String findElev(String name) {
+        return dbHelper.findElev(name);
+    }
+
     
     /**
      * 

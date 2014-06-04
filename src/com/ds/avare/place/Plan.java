@@ -28,11 +28,11 @@ import com.ds.avare.utils.Helper;
  */
 public class Plan {
 
-    private Destination[] mDestination = new Destination[MAX_DESTINATIONS];
-    private Boolean[] mPassed = new Boolean[MAX_DESTINATIONS];
+    private Destination[] mDestination;
+    private Boolean[] mPassed;
     
     
-    private static final int MAX_DESTINATIONS = 10;
+    private static final int MAX_DESTINATIONS = 15;
     
     private static final int MILES_PER_SEGMENT = 50;
     
@@ -53,6 +53,13 @@ public class Plan {
      * @param dataSource
      */
     public Plan() {
+        clear();
+    }
+
+    /**
+     * 
+     */
+    public void clear() {
         mActive = false;
         mTrackShape = new TrackShape();
         mDistance = 0;
@@ -60,10 +67,12 @@ public class Plan {
         mBearing = 0;
         mDeclination = 0;
         mDestChanged = false;
+        mDestination = new Destination[MAX_DESTINATIONS];
+        mPassed = new Boolean[MAX_DESTINATIONS];
         mEte = "--:--";
         mPassage = new Passage();
     }
-
+    
     /**
      * 
      */
@@ -114,8 +123,7 @@ public class Plan {
         }
         if(getDestinationNumber() > 0) {
             if(mLastLocation != null) {
-                mTrackShape.updateShapeFromPlan(getCoordinates(
-                        mLastLocation.getLongitude(), mLastLocation.getLatitude()));
+                mTrackShape.updateShapeFromPlan(getCoordinates());
             }
         }
         else {
@@ -155,8 +163,7 @@ public class Plan {
         
         if(num > 0) {
             if(mLastLocation != null) {
-                mTrackShape.updateShapeFromPlan(getCoordinates(
-                        mLastLocation.getLongitude(), mLastLocation.getLatitude()));
+                mTrackShape.updateShapeFromPlan(getCoordinates());
             }
         }
         else {
@@ -201,8 +208,7 @@ public class Plan {
         if(null == mLastLocation) {
             mLastLocation = new GpsParams(mDestination[n].getLocationInit());
         }
-        mTrackShape.updateShapeFromPlan(getCoordinates(
-                mLastLocation.getLongitude(), mLastLocation.getLatitude()));
+        mTrackShape.updateShapeFromPlan(getCoordinates());
 
         return(true);
     }
@@ -258,22 +264,49 @@ public class Plan {
             mPassage = new Passage();
             return;
         }
+        if(mPassed[0] == false) {
+            mPassed[0] = true;
+        }
         
         /*
-         * For all passed way points set distance to current
+         * Depends if it is active or plan
          */
-        for(int id = 0; id <= np; id++) {
-            mDestination[id].updateTo(params);
-        }
-        mDistance = mDestination[np].getDistance();
+        if(mActive) {
         
-        /*
-         * For all upcoming, add distance. Distance is from way point to way point
-         */
-        for(int id = np; id < (num - 1); id++) {
-            mDestination[id + 1].updateTo(new GpsParams(mDestination[id].getLocation()));
-            mDistance += mDestination[id + 1].getDistance();
+            /*
+             * For all passed way points set distance to current
+             */
+            for(int id = 0; id <= np; id++) {
+                mDestination[id].updateTo(params);
+            }
+            mDistance = mDestination[np].getDistance();
+    
+            /*
+             * For all upcoming, add distance. Distance is from way point to way point
+             */
+            for(int id = (np + 1); id < num; id++) {
+                mDestination[id].updateTo(new GpsParams(mDestination[id - 1].getLocation()));
+                mDistance += mDestination[id].getDistance();
+            }
+
         }
+        else {
+            mDestination[0].updateTo(params);
+            for(int id = 1; id < num; id++) {
+                mDestination[id].updateTo(new GpsParams(mDestination[id - 1].getLocation()));
+            }
+            
+            mDistance = 0;
+            for(int id = 0; id < num; id++) {
+                /*
+                 * For all upcoming, add distance. Distance is from way point to way point
+                 */
+                if(!mPassed[id]) {
+                    mDistance += mDestination[id].getDistance();
+                }
+            }
+        }
+        
         if(num > 0) {
             mBearing = mDestination[findNextNotPassed()].getBearing();
             if(mPassage.updateLocation(params, mDestination[findNextNotPassed()])) {
@@ -307,8 +340,7 @@ public class Plan {
     public void makeActive(GpsParams params) {
         mLastLocation = params;
         if(null != params) {
-            mTrackShape.updateShapeFromPlan(getCoordinates(
-                    mLastLocation.getLongitude(), mLastLocation.getLatitude()));
+            mTrackShape.updateShapeFromPlan(getCoordinates());
         }
         mActive = true;
     }
@@ -343,17 +375,17 @@ public class Plan {
     /*
      * Get a list of coordinates forming this route on great circle
      */
-    public Coordinate[] getCoordinates(double initLon, double initLat) {
+    public Coordinate[] getCoordinates() {
         int num = getDestinationNumber();
         
-        double lon0 = initLon;
-        double lat0 = initLat;
         Coordinate[] c = null;
 
         /*
          * Form a general path on the great circle of this plan
          */
-        for(int id = 0; id < num; id++) {
+        for(int id = 1; id < num; id++) {
+            double lon0 = getDestination(id - 1).getLocation().getLongitude();
+            double lat0 = getDestination(id - 1).getLocation().getLatitude();
             Projection p = new Projection(
                     getDestination(id).getLocation().getLongitude(), 
                     getDestination(id).getLocation().getLatitude(),
@@ -361,14 +393,19 @@ public class Plan {
             int segments = (int)p.getDistance() / MILES_PER_SEGMENT + 3; // Min 3 points
             Coordinate coord[] = p.findPoints(segments);
 
+            coord[0].makeSeparate();
             if(null == c) {
                 c = coord;
             }
             else {
                 c = concat(c, coord);
             }
-            lon0 = getDestination(id).getLocation().getLongitude();
-            lat0 = getDestination(id).getLocation().getLatitude();            
+        }
+        /*
+         * Last circle
+         */
+        if(c != null) {
+            c[c.length - 1].makeSeparate();
         }
         return c;
     }
@@ -448,6 +485,16 @@ public class Plan {
             return ret;
         }
         
+    }
+    
+    /**
+     * 
+     */
+    public void simulate() {
+        int num = getDestinationNumber(); 
+        if(num > 0) {
+            updateLocation(new GpsParams(mDestination[num - 1].getLocation()));
+        }
     }
     
 }

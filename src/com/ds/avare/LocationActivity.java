@@ -18,9 +18,11 @@ import java.util.Observable;
 import java.util.Observer;
 import com.ds.avare.R;
 import com.ds.avare.animation.AnimateButton;
+import com.ds.avare.flight.FlightStatusInterface;
 import com.ds.avare.gps.Gps;
 import com.ds.avare.gps.GpsInterface;
 import com.ds.avare.gps.GpsParams;
+import com.ds.avare.place.Airport;
 import com.ds.avare.place.Destination;
 import com.ds.avare.storage.Preferences;
 import com.ds.avare.storage.StringPreference;
@@ -87,7 +89,7 @@ public class LocationActivity extends Activity implements Observer {
     /**
      * Shows warning message about Avare
      */
-    private AlertDialog mAlertDialogWarn;
+    private AlertDialog mAlertDialogDatabase;
 
     /**
      * Shows exit dialog
@@ -112,6 +114,7 @@ public class LocationActivity extends Activity implements Observer {
     private RelativeLayout mDestLayout;
     private ToggleButton mSimButton;
     private Button mDrawButton;
+    private Button mWebButton;
     private ToggleButton mTrackButton;
     private Spinner mChartSpinner;
     private Bundle mExtras;
@@ -120,8 +123,39 @@ public class LocationActivity extends Activity implements Observer {
     private boolean mSpinner;
     private TextView mInfoText;
     private TextView mChartText;
-
+    private AnimateButton mAnimateTracks;
+    private AnimateButton mAnimateSim;
+    private AnimateButton mAnimateWeb;
+    private AnimateButton mAnimateTrack;
+    private AnimateButton mAnimateChart;
+    private AnimateButton mAnimateHelp;
+    private AnimateButton mAnimateDownload;
+    private AnimateButton mAnimatePref;
+    
     private ExpandableListView mListPopout;
+    
+    private FlightStatusInterface mFSInfc = new FlightStatusInterface() {
+        @Override
+        public void rollout() {
+            if(mPref != null && mService != null) {
+                if(mPref.shouldAutoDisplayAirportDiagram()) {
+                    int nearestNum = mService.getArea().getAirportsNumber();
+                    if(nearestNum > 0) {
+                        /*
+                         * Find the nearest airport and load its plate on rollout
+                         */
+                        Airport nearest = mService.getArea().getAirport(0);
+                        if(nearest != null && PlatesActivity.doesAirportHaveAirportDiagram(mPref.mapsFolder(),
+                                nearest.getId()) && nearest.getDistance() < Preferences.DISTANCE_TO_AUTO_LOAD) {
+                            mService.setLastPlateAirport(nearest.getId());
+                            mService.setLastPlateIndex(0);
+                            ((MainActivity) LocationActivity.this.getParent()).showPlatesTab();
+                        }
+                    }
+                }
+            }
+        }
+    };
 
     private GpsInterface mGpsInfc = new GpsInterface() {
 
@@ -162,7 +196,7 @@ public class LocationActivity extends Activity implements Observer {
                 mLocationView.updateErrorStatus(getString(R.string.Init));
             }
             else if(!(new File(mPref.mapsFolder() + "/databases")).exists()) {
-                mLocationView.updateErrorStatus(getString(R.string.DownloadDBShort));              
+                mLocationView.updateErrorStatus(getString(R.string.DownloadDBShort));
             }
             else if(!(new File(mPref.mapsFolder() + "/tiles")).exists()) {
                 mLocationView.updateErrorStatus(getString(R.string.MissingMaps));
@@ -248,7 +282,6 @@ public class LocationActivity extends Activity implements Observer {
         mToast.setText(getString(R.string.Searching) + " " + dst);
         mToast.show();
         mDestination.find();
-        mService.getPlan().makeInactive();
         mDestLayout.setVisibility(View.INVISIBLE);
     }
 
@@ -282,6 +315,7 @@ public class LocationActivity extends Activity implements Observer {
                 /*
                  * Go to background
                  */
+                setTrackState(false);   // ensure tracks are turned off
                 LocationActivity.super.onBackPressed();
                 dialog.dismiss();
             }
@@ -301,6 +335,35 @@ public class LocationActivity extends Activity implements Observer {
         mAlertDialogExit.show();
 
     }
+
+    /**
+     * 
+     */
+    private void hideMenu() {
+        mAnimateTracks.animateBack();
+        mAnimateWeb.animateBack();
+        mAnimateSim.animateBack();
+        mAnimateTrack.animateBack();
+        mAnimateChart.animateBack();
+        mAnimateHelp.animateBack();
+        mAnimateDownload.animateBack();
+        mAnimatePref.animateBack();
+    }
+    
+    /**
+     * 
+     */
+    private void showMenu() {
+        mAnimateTracks.animate();
+        mAnimateWeb.animate();
+        mAnimateSim.animate();
+        mAnimateTrack.animate();
+        mAnimateChart.animate();
+        mAnimateHelp.animate();
+        mAnimateDownload.animate();
+        mAnimatePref.animate();
+    }
+
 
     /* (non-Javadoc)
      * @see android.app.Activity#onCreate(android.os.Bundle)
@@ -324,7 +387,6 @@ public class LocationActivity extends Activity implements Observer {
         View view = layoutInflater.inflate(R.layout.location, null);
         setContentView(view);
         mLocationView = (LocationView)view.findViewById(R.id.location);
-        mLocationView.zoomOut();                
 
         /*
          * To be notified of some action in the view
@@ -391,37 +453,33 @@ public class LocationActivity extends Activity implements Observer {
              */
             @Override
             public void gestureCallBack(int event, LongTouchDestination data) {
+                
+                if(GestureInterface.TOUCH == event) {
+                    hideMenu();
+                }
+
                 if(GestureInterface.LONG_PRESS == event) {
-                    if(mLocationView.getDraw()) {
-                        /*
-                         * Show animation button for draw clear
-                         */
-                        AnimateButton e = new AnimateButton(getApplicationContext(), mDrawClearButton, AnimateButton.DIRECTION_L_R, (View[])null);
-                        e.animate(true);
+                    /*
+                     * Show the animation button for dest
+                     */
+                    mInfoText.setText(data.info);
+                    mChartText.setText(data.chart);
+                    if(isSameDest(data.airport)) {
+                        mDestButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.remove, 0, 0, 0);
+                        mDestButton.setText(getString(R.string.Delete));
                     }
                     else {
-                        /*
-                         * Show the animation button for dest
-                         */
-                        mInfoText.setText(data.info);
-                        mChartText.setText(data.chart);
-                        if(isSameDest(data.airport)) {
-                            mDestButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.remove, 0, 0, 0);
-                            mDestButton.setText(getString(R.string.Delete));
-                        }
-                        else {
-                            mDestButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.direct, 0, 0, 0);
-                            mDestButton.setText(getString(R.string.Destination));
-                        }
-                        mCrossButton.setText(data.airport);
-                        mDestLayout.setVisibility(View.VISIBLE);
-                        
-                        /*
-                         * Now populate the pop out weather etc.
-                         */
-                        PopoutAdapter p = new PopoutAdapter(getApplicationContext(), data);
-                        mListPopout.setAdapter(p);
+                        mDestButton.setCompoundDrawablesWithIntrinsicBounds(R.drawable.direct, 0, 0, 0);
+                        mDestButton.setText(getString(R.string.Destination));
                     }
+                    mCrossButton.setText(data.airport);
+                    mDestLayout.setVisibility(View.VISIBLE);
+                    
+                    /*
+                     * Now populate the pop out weather etc.
+                     */
+                    PopoutAdapter p = new PopoutAdapter(getApplicationContext(), data);
+                    mListPopout.setAdapter(p);
                 }
             }
             
@@ -509,20 +567,7 @@ public class LocationActivity extends Activity implements Observer {
 
             @Override
             public void onClick(View v) {
-                AnimateButton k = new AnimateButton(getApplicationContext(), mTracksButton, AnimateButton.DIRECTION_R_L);
-                AnimateButton s = new AnimateButton(getApplicationContext(), mSimButton, AnimateButton.DIRECTION_R_L);
-                AnimateButton t = new AnimateButton(getApplicationContext(), mTrackButton, AnimateButton.DIRECTION_R_L);
-                AnimateButton c = new AnimateButton(getApplicationContext(), mChartSpinner, AnimateButton.DIRECTION_R_L, (View[])null);
-                AnimateButton b = new AnimateButton(getApplicationContext(), mHelpButton, AnimateButton.DIRECTION_L_R, mCenterButton, mMenuButton, mDrawButton);
-                AnimateButton d = new AnimateButton(getApplicationContext(), mDownloadButton, AnimateButton.DIRECTION_L_R, (View[])null);
-                AnimateButton f = new AnimateButton(getApplicationContext(), mPrefButton, AnimateButton.DIRECTION_L_R, (View[])null);
-                b.animate(true);
-                d.animate(true);
-                c.animate(true);
-                s.animate(true);
-                t.animate(true);
-                f.animate(true);
-                k.animate(true);
+                showMenu();
             }
             
         });
@@ -588,6 +633,20 @@ public class LocationActivity extends Activity implements Observer {
                  * Bring up preferences
                  */
                 startActivity(new Intent(LocationActivity.this, PrefActivity.class));
+            }
+            
+        });
+
+        mWebButton = (Button)view.findViewById(R.id.location_button_web);
+        mWebButton.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                
+                /*
+                 * Bring up preferences
+                 */
+                startActivity(new Intent(LocationActivity.this, RegisterActivity.class));
             }
             
         });
@@ -692,9 +751,11 @@ public class LocationActivity extends Activity implements Observer {
                  */
                 if(mDrawButton.getText().equals(getString(R.string.Draw))) {
                     mLocationView.setDraw(true);
+                    mDrawClearButton.setVisibility(View.VISIBLE);
                 }
                 else {
                     mLocationView.setDraw(false);                    
+                    mDrawClearButton.setVisibility(View.INVISIBLE);
                 }
             }
             
@@ -709,49 +770,9 @@ public class LocationActivity extends Activity implements Observer {
 
             @Override
             public void onClick(View v) {
-                if(null != mService && mPref.shouldSaveTracks()) {
-                	URI fileURI = mService.setTracks(mPref, !mService.getTracks());
-                	/* The fileURI is returned when the tracks are closed off.
-                	 */
-                	if(fileURI != null) {
-	                	String fileName = fileURI.getPath().substring((fileURI.getPath().lastIndexOf('/') + 1));
-	        			switch(mPref.autoPostTracks()) {
-		    				case 0:
-		    	    			/* Just display a toast message to the user that the file was saved
-		    	    			 */
-		    	    			Toast.makeText(getApplicationContext(), 
-		    	    							String.format(getString(R.string.AutoPostTracksDialogText), fileName), 
-		    	    							Toast.LENGTH_LONG).show();
-		    	    			break;
-		
-		    				case 1:
-		    	    			/* Send this file out as an email attachment
-		    	    			 */
-		    	        	    try {
-		    	            	    Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);
-		    	            	    emailIntent.setType("application/kml");
-		    	                    emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, getString(R.string.AutoPostTracksSubject) + " " + fileName); 
-		    	            	    emailIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(fileURI.getPath())));
-		    	            	    startActivity(emailIntent);
-		    	        	    } catch (Exception e) { 
-		    	        	        
-		    	        	    }
-		    	        	    break;
-		
-		    				case 2:
-		    	    			/* Send it somewhere as KML. Let the user choose where.
-		    	    			 */
-		    	        	    try {
-		    	            	    Intent viewIntent = new Intent(android.content.Intent.ACTION_VIEW);
-		    	            	    viewIntent.setDataAndType(Uri.fromFile(new File(fileURI.getPath())), "application/vnd.google-earth.kml+xml");
-		    	            	    startActivity(Intent.createChooser(viewIntent, getString(R.string.AutoPostTracksTitle)));
-		    	        	    } catch (Exception e) { 
-		    	        	        
-		    	        	    }
-		    	        	    break;
-		    			}
-                	}
-                }
+            if(null != mService && mPref.shouldSaveTracks()) {
+                setTrackState(!mService.getTracks());
+            }
             }        
         });
 
@@ -790,8 +811,65 @@ public class LocationActivity extends Activity implements Observer {
         mExtras = getIntent().getExtras();
  
         mService = null;
+        mAnimateTracks = new AnimateButton(getApplicationContext(), mTracksButton, AnimateButton.DIRECTION_R_L);
+        mAnimateWeb = new AnimateButton(getApplicationContext(), mWebButton, AnimateButton.DIRECTION_L_R);
+        mAnimateSim = new AnimateButton(getApplicationContext(), mSimButton, AnimateButton.DIRECTION_R_L);
+        mAnimateTrack = new AnimateButton(getApplicationContext(), mTrackButton, AnimateButton.DIRECTION_R_L);
+        mAnimateChart = new AnimateButton(getApplicationContext(), mChartSpinner, AnimateButton.DIRECTION_R_L, (View[])null);
+        mAnimateHelp = new AnimateButton(getApplicationContext(), mHelpButton, AnimateButton.DIRECTION_L_R, mCenterButton, mDrawButton, mMenuButton);
+        mAnimateDownload = new AnimateButton(getApplicationContext(), mDownloadButton, AnimateButton.DIRECTION_L_R, (View[])null);
+        mAnimatePref = new AnimateButton(getApplicationContext(), mPrefButton, AnimateButton.DIRECTION_L_R, (View[])null);
+
     }    
 
+    private void setTrackState(boolean bState)
+    {
+        URI fileURI = mService.setTracks(bState);
+                	/* The fileURI is returned when the tracks are closed off.
+                	 */
+        if(fileURI != null) {
+            String fileName = fileURI.getPath().substring((fileURI.getPath().lastIndexOf('/') + 1));
+            switch(mPref.autoPostTracks()) {
+                case 0:
+		    	    			/* Just display a toast message to the user that the file was saved
+		    	    			 */
+                    Toast.makeText(getApplicationContext(),
+                            String.format(getString(R.string.AutoPostTracksDialogText), fileName),
+                            Toast.LENGTH_LONG).show();
+                    break;
+
+                case 1:
+		    	    			/* Send this file out as an email attachment
+		    	    			 */
+                    try {
+                        Intent emailIntent = new Intent(android.content.Intent.ACTION_SEND);
+                        emailIntent.setType("application/kml");
+                        emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT,
+                                getString(R.string.AutoPostTracksSubject) + " " + fileName);
+                        emailIntent.putExtra(Intent.EXTRA_STREAM,
+                                Uri.fromFile(new File(fileURI.getPath())));
+                        startActivity(emailIntent);
+                    } catch (Exception e) {
+
+                    }
+                    break;
+
+                case 2:
+		    	    			/* Send it somewhere as KML. Let the user choose where.
+		    	    			 */
+                    try {
+                        Intent viewIntent = new Intent(android.content.Intent.ACTION_VIEW);
+                        viewIntent.setDataAndType(Uri.fromFile(new File(fileURI.getPath())),
+                                "application/vnd.google-earth.kml+xml");
+                        startActivity(Intent.createChooser(viewIntent,
+                                getString(R.string.AutoPostTracksTitle)));
+                    } catch (Exception e) {
+
+                    }
+                    break;
+            }
+        }
+    }
     /** Defines callbacks for service binding, passed to bindService() */
     /**
      * 
@@ -804,27 +882,53 @@ public class LocationActivity extends Activity implements Observer {
         @Override
         public void onServiceConnected(ComponentName className,
                 IBinder service) {
+            
+            if(!mPref.isRegistered()) {
+                Intent i = new Intent(LocationActivity.this, RegisterActivity.class);
+                i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                startActivity(i);
+            }
+            
             /* 
              * We've bound to LocalService, cast the IBinder and get LocalService instance
              */
             StorageService.LocalBinder binder = (StorageService.LocalBinder)service;
             mService = binder.getService();
             mService.registerGpsListener(mGpsInfc);
+            mService.getFlightStatus().registerListener(mFSInfc);
 
             mService.getTiles().setOrientation();
             
             /*
              * Check if database needs upgrade
              */
-            if(mPref.isNewerVersion(LocationActivity.this)) {
-                Intent i = new Intent(LocationActivity.this, ChartsDownloadActivity.class);
-                i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-                startActivity(i);
-                return;
-            }
             if(!mService.getDBResource().isPresent()) {
-                mToast.setText(R.string.DownloadDB);
-                mToast.show();
+
+                mAlertDialogDatabase = new AlertDialog.Builder(LocationActivity.this).create();
+                mAlertDialogDatabase.setTitle(getString(R.string.download));
+                mAlertDialogDatabase.setCancelable(false);
+                mAlertDialogDatabase.setCanceledOnTouchOutside(false);
+                mAlertDialogDatabase.setMessage(getString(R.string.DownloadDB));
+                mAlertDialogDatabase.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.download), new DialogInterface.OnClickListener() {
+                    /* (non-Javadoc)
+                     * @see android.content.DialogInterface.OnClickListener#onClick(android.content.DialogInterface, int)
+                     */
+                    public void onClick(DialogInterface dialog, int which) {
+                        Intent i = new Intent(LocationActivity.this, ChartsDownloadActivity.class);
+                        i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+                        mLocationView.zoomOut();
+                        startActivity(i);
+                    }
+                });
+                mAlertDialogDatabase.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.Cancel), new DialogInterface.OnClickListener() {
+                    /* (non-Javadoc)
+                     * @see android.content.DialogInterface.OnClickListener#onClick(android.content.DialogInterface, int)
+                     */
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+                mAlertDialogDatabase.show();
                 return;
             }
 
@@ -852,31 +956,6 @@ public class LocationActivity extends Activity implements Observer {
                 mLocationView.updateParams(mService.getGpsParams());
             }
 
-            mLocationView.updateDestination();
-
-            /*
-             * Show avare warning when service says so 
-             */
-            if(mService.shouldWarn()) {
-             
-                mAlertDialogWarn = new AlertDialog.Builder(LocationActivity.this).create();
-                mAlertDialogWarn.setTitle(getString(R.string.WarningMsg));
-                mAlertDialogWarn.setMessage(getString(R.string.Warning));
-                mAlertDialogWarn.setCanceledOnTouchOutside(false);
-                mAlertDialogWarn.setCancelable(false);
-                mAlertDialogWarn.setIcon(R.drawable.important_red);
-                mAlertDialogWarn.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.Understand), new DialogInterface.OnClickListener() {
-                    /* (non-Javadoc)
-                     * @see android.content.DialogInterface.OnClickListener#onClick(android.content.DialogInterface, int)
-                     */
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                });
-    
-                mAlertDialogWarn.show();
-            }    
-            
             /*
              * See if we got an intent to search for address as dest
              */
@@ -897,11 +976,6 @@ public class LocationActivity extends Activity implements Observer {
                 }
                 mExtras = null;
             }
-
-            /*
-             * Force reload
-             */
-            mLocationView.forceReload();
         }
 
         /* (non-Javadoc)
@@ -957,6 +1031,7 @@ public class LocationActivity extends Activity implements Observer {
         
         if(null != mService) {
             mService.unregisterGpsListener(mGpsInfc);
+            mService.getFlightStatus().unregisterListener(mFSInfc);
         }
 
         /*
@@ -967,9 +1042,9 @@ public class LocationActivity extends Activity implements Observer {
         /*
          * Kill dialogs
          */
-        if(null != mAlertDialogWarn) {
+        if(null != mAlertDialogDatabase) {
             try {
-                mAlertDialogWarn.dismiss();
+                mAlertDialogDatabase.dismiss();
             }
             catch (Exception e) {
             }
@@ -990,6 +1065,11 @@ public class LocationActivity extends Activity implements Observer {
             catch (Exception e) {
             }
         }
+
+        /*
+         * Do this as switching from screen needs to hide its menu
+         */
+        hideMenu();
     }
     
     /* (non-Javadoc)
@@ -1051,7 +1131,7 @@ public class LocationActivity extends Activity implements Observer {
                     }
                     mToast.setText(getString(R.string.DestinationSet) + ((Destination)arg0).getID());
                     mToast.show();
-                    ((MainActivity)this.getParent()).switchTab(0);
+                    ((MainActivity)this.getParent()).showMapTab();
                 }
                 else {
                     if(mService != null) {

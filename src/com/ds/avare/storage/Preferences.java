@@ -34,13 +34,19 @@ public class Preferences {
     /*
      * These are set when inited
      */
-    public static double distanceConversion = 1.944;
-    public static double heightConversion = 3.28;
+    public static double speedConversion = 1.944;
+    public static double heightConversion = 3.28084;
+    public static double feetConversion = 6076.12;
     public static double earthRadiusConversion = 3440.069;
     public static String distanceConversionUnit = "nm";
     public static String speedConversionUnit = "kt";
     public static String vsConversionUnit = "fpm";
 
+    /*
+     * plate auto load distance
+     */
+    public static final double DISTANCE_TO_AUTO_LOAD = 3.0;
+    
     public static final String IMAGE_EXTENSION = ".png";
     
     /*
@@ -49,6 +55,7 @@ public class Preferences {
     public static final int MAX_RECENT = 30; 
     
     public static final int MAX_PLANS = 20; 
+    public static final int MAX_LISTS = 20; 
        
     /*
      * Max memory and max screen size it will support
@@ -76,6 +83,7 @@ public class Preferences {
     public static double NM_TO_MI = 1.15078;
     public static double NM_TO_KM = 1.852;
     public static double NM_TO_LATITUDE = 1.0 / 60.0;
+    public static double MS_TO_KT = 1.94384;
 
     /**
      * 
@@ -91,23 +99,26 @@ public class Preferences {
          */
         mPref = PreferenceManager.getDefaultSharedPreferences(mContext);
         if(getDistanceUnit().equals(mContext.getString(R.string.UnitKnot))) {
-            distanceConversion = 1.944; // m/s to kt/hr
+            speedConversion = 1.944; // m/s to kt/hr
             heightConversion = 3.28;
+            feetConversion = 6076.12;
             earthRadiusConversion = 3440.069;
             distanceConversionUnit = mContext.getString(R.string.DistKnot);
             speedConversionUnit = mContext.getString(R.string.SpeedKnot);
             vsConversionUnit = mContext.getString(R.string.VsFpm);
         }
         else if(getDistanceUnit().equals(mContext.getString(R.string.UnitMile))) {
-            distanceConversion = 2.2396; // m/s to mi/hr
+            speedConversion = 2.2396; // m/s to mi/hr
             heightConversion = 3.28;
+            feetConversion = 5280;
             earthRadiusConversion = 3963.1676;            
             distanceConversionUnit = mContext.getString(R.string.DistMile);
             speedConversionUnit = mContext.getString(R.string.SpeedMile);
             vsConversionUnit = mContext.getString(R.string.VsFpm);
         } else if(getDistanceUnit().equals(mContext.getString(R.string.UnitKilometer))) {
-            distanceConversion = 3.6; // m/s to kph
+            speedConversion = 3.6; // m/s to kph
             heightConversion = 3.28;
+            feetConversion = 3280.84;
             earthRadiusConversion = 6378.09999805; 
             distanceConversionUnit = mContext.getString(R.string.DistKilometer);
             speedConversionUnit = mContext.getString(R.string.SpeedKilometer);
@@ -132,7 +143,7 @@ public class Preferences {
             /*
              * I hope Android comes up with a better resource solution some time soon.
              */
-            return "http://www.mamba.dreamhosters.com/new/";
+            return "http://208.113.226.170/new/";
         }
         else if (val.equals("1")) {
             return "http://avare.kitepilot.org/new/";
@@ -379,6 +390,14 @@ public class Preferences {
     public boolean shouldExtendRunways() {
         return(mPref.getBoolean(mContext.getString(R.string.Runways), true));
     }
+    
+    /**
+     * 
+     * @return
+     */
+    public boolean shouldAutoDisplayAirportDiagram() {
+    	return(mPref.getBoolean(mContext.getString(R.string.AutoShowAirportDiagram), false));
+    }
 
     /**
      * 
@@ -614,8 +633,14 @@ public class Preferences {
      * 
      * @return
      */
-    public boolean showRadar() {
-        return(mPref.getBoolean(mContext.getString(R.string.Radar), false));
+    public int showRadar() {
+        String val = mPref.getString(mContext.getString(R.string.Radar), "255");
+        try {
+            return(Integer.parseInt(val));
+        }
+        catch(Exception e) {
+        }
+        return 255;
     }
     
     /**
@@ -666,7 +691,7 @@ public class Preferences {
      * @return
      */
     public boolean useDynamicFields() {
-        return mPref.getBoolean(mContext.getString(R.string.prefUseDynamicFields), false);
+        return mPref.getBoolean(mContext.getString(R.string.prefUseDynamicFields), true);
     }
     
     /**
@@ -701,7 +726,75 @@ public class Preferences {
      * 
      * @param value
      */
+    public void setRegistered(boolean registered) {
+        mPref.edit().putBoolean(mContext.getString(R.string.register), registered).commit();
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public boolean isRegistered() {
+        return mPref.getBoolean(mContext.getString(R.string.register), false);
+    }
+
+    /**
+     * 
+     * @param value
+     */
     public void setOdometer(double value) {
     	mPref.edit().putString(mContext.getString(R.string.prefOdometer), String.format("%f", value)).commit();
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public boolean getShowCDI() {
+        return mPref.getBoolean(mContext.getString(R.string.prefShowCDI), false);
+    }
+
+    /**
+     * 
+     * @return
+     */
+    public boolean shouldShowEdgeTape() {
+        return mPref.getBoolean(mContext.getString(R.string.EdgeTape), false);
+    }
+
+    /**
+     * 7 is the  glide ratio of most common aircraft like C172 and C182
+     * @return
+     */
+    public float getGlideRatio() {
+        String def = "7.0";
+        float mratio = Float.parseFloat(def);
+        String ratio = mPref.getString(mContext.getString(R.string.GlideRatio), def);
+        try {
+            mratio = Float.parseFloat(ratio);
+        }
+        catch (Exception e) {
+            /*
+             * Save default
+             */
+            mPref.edit().putString(mContext.getString(R.string.GlideRatio), def).commit();
+        }
+        return(mratio);
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public String getLists() {
+        return mPref.getString(mContext.getString(R.string.List), "");
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public void putLists(String name) {
+        mPref.edit().putString(mContext.getString(R.string.List), name).commit();
     }
 }

@@ -14,6 +14,9 @@ package com.ds.avare.shapes;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -23,6 +26,7 @@ import com.ds.avare.position.Origin;
 import com.ds.avare.position.Scale;
 import com.ds.avare.storage.Preferences;
 import com.ds.avare.utils.BitmapHolder;
+import com.ds.avare.utils.Helper;
 
 /**
  * 
@@ -33,12 +37,14 @@ import com.ds.avare.utils.BitmapHolder;
  */
 public class Radar {
 
+    private static final long EXPIRES = 1000 * 60 * 60 * 2; // 2 hours
+    
     private BitmapHolder mBitmap;
     private float mLon;
     private float mLat;
     private float mPx;
     private float mPy;
-    private String mDate;
+    private long mDate;
 
     private Preferences mPref;
     private Context mContext;
@@ -53,10 +59,8 @@ public class Radar {
     public Radar(Context ctx) {
         mContext = ctx;
         mPref = new Preferences(mContext);
-        mImage = mPref.mapsFolder() + "/" + "conus.png";
-        mText = mPref.mapsFolder() + "/" + "conus.txt";
         mLon = mLat = mPx = mPy = 0;
-        mDate = "";
+        mDate = 0;
         mBitmap = null;
     }
     
@@ -64,37 +68,48 @@ public class Radar {
      * 
      */
     public void parse() {
+        mImage = mPref.mapsFolder() + "/" + "latest_radaronly.png";
+        mText = mPref.mapsFolder() + "/" + "latest.txt";
 
         if(new File(mText).exists() && new File(mImage).exists()) {
 
             try {
                 BufferedReader br;
                 br = new BufferedReader(new FileReader(mText));
-                String line = br.readLine(); // read lon/lat
-                line.replaceAll("\\s", "");
-                String coords[] = line.split(",");
-                String line2 = br.readLine(); // read lon/lat
-                line2.replaceAll("\\s", "");
-                String px[] = line2.split(",");
-                mDate = br.readLine(); // read date
-                mLon = Float.parseFloat(coords[0]);
-                mLat = Float.parseFloat(coords[1]);
-                mPx = Float.parseFloat(px[0]);
-                mPy = Float.parseFloat(px[1]);
+                
+                /*
+                 * Read lon/lat/px/py/date
+                 */
+                String line = br.readLine();
+                mPx = Float.parseFloat(line);
+
+                line = br.readLine();
+                mPy = Float.parseFloat(line);
+                
+                line = br.readLine();
+                mLon = Float.parseFloat(line);
+
+                line = br.readLine();
+                mLat = Float.parseFloat(line);
+
+                String dateText = br.readLine();
                 br.close();
                 if(mBitmap != null) {
                     mBitmap.recycle();                
                 }
                 
                 mBitmap = new BitmapHolder(mImage);
+                
+                /*
+                 * Date format YYYYMMDD_HHmm
+                 */
+                Date date = new SimpleDateFormat("yyyyMMdd_HHmm", Locale.ENGLISH).parse(dateText);
+                mDate = date.getTime();
             }
             catch (Exception e) {
                 return;
             }
-
-            
         }
-        
     }
     
     /**
@@ -106,7 +121,7 @@ public class Radar {
             mBitmap = null;
         }        
         mLon = mLat = mPx = mPy = 0;
-        mDate = "";
+        mDate = 0;
     }
     
     /**
@@ -125,10 +140,10 @@ public class Radar {
         float y = (float)origin.getOffsetY(mLat);                        
    
         /*
-         * The main image is 15% of the coordinates, hence 6.66667
+         * The main image is 40% of the coordinates, hence 0.4
          */
-        float scalex = (float)(mPx * 6.66666 / px);
-        float scaley = (float)(mPy * 6.66666 / py);
+        float scalex = (float)(mPx * (1 / 0.4) / px);
+        float scaley = (float)(mPy * (1 / 0.4) / py);
         mBitmap.getTransform().setScale(scalex * scale.getScaleFactor(), 
                 scaley * scale.getScaleCorrected());
         mBitmap.getTransform().postTranslate(x, y);
@@ -140,7 +155,21 @@ public class Radar {
      * 
      * @return
      */
+    public boolean isOld() {
+        long diff = Helper.getMillisGMT();
+        diff -= mDate; 
+        if(diff > EXPIRES) {
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * 
+     * @return
+     */
     public String getDate() {
-        return mDate;
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()); 
+        return formatter.format(new Date(mDate)) + "Z";
     }
 }

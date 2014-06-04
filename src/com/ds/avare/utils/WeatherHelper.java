@@ -11,6 +11,7 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.ds.avare.utils;
 
+import java.util.LinkedList;
 import java.util.Locale;
 
 import com.ds.avare.R;
@@ -590,4 +591,215 @@ public class WeatherHelper {
 
         return "";
     }
+    
+    /**
+     * 
+     * @return
+     */
+    public static String getNamMosLegend() {
+        /*
+         * Legend 
+         */
+        return
+                "<a href='http://www.nws.noaa.gov/mdl/synop/namcard.php'>NAM Forecast Legend</a><br>";
+
+    }
+
+    /**
+     * Returns time from METAR
+     * @param metar
+     * @return
+     */
+    public static String getMetarTime(String metar) {
+        String time = "";
+        // parse time, temp, altitude setting 
+        String tokens[] = metar.split(" ");
+        if(tokens.length > 1) {
+            time = tokens[1];
+        }
+        
+        return time;
+    }
+
+    /**
+     * Returns density altitude for a field from its METAR and elevation
+     * @param metar
+     * @param elevation
+     * @return
+     */
+    public static String getDensityAltitude(String metar, String elev) {
+        
+        if(null == elev || null == metar) {
+            return "";
+        }
+        
+        double da = 0;
+        double temp = 0;
+        double as = 0;
+        
+        double st = 0;
+        double at = 0;
+       
+        double pa = 0;
+        double elevation = 0;
+        
+        boolean tmpset = false;
+        boolean aset = false;
+        boolean melev = false;
+        
+        // parse time, temp, altitude setting 
+        String tokens[] = metar.split(" ");
+        
+        try {
+            for(int i = 0; i < tokens.length; i++) {
+                if(tokens[i].equals("RMK")) {
+                    break;
+                }
+                if(tokens[i].matches("M?[0-9]*/M?[0-9]*")) {
+                    String t = tokens[i].split("/")[0];
+                    if(t.startsWith("M")) {
+                        t = t.substring(1);
+                    }
+                    temp = Double.parseDouble(t);
+                    tmpset = true;
+                    continue;
+                }
+                if(tokens[i].matches("A[0-9][0-9][0-9][0-9]")) {
+                    as = Double.parseDouble(tokens[i].split("A")[1]) / 100;
+                    aset = true;
+                    continue;
+                }
+            }
+            elevation = Double.parseDouble(elev);
+            melev = true;
+        }
+        catch (Exception e) {
+        }
+        
+        if(tmpset && aset && melev) {
+            
+            // pressure altitude, correct for non standard
+            pa = elevation + (29.92 - as) * 1000.0;
+            
+            // standard temp Kelvin
+            st = 273.15 - (15 - 0.0019812 * pa);
+
+            // reported temp Kelvin
+            at = 273.15 - temp;
+
+            // density altitude, aviation formulary
+            da = pa + 118.6 * (st - at);
+            
+            // round to nearest 100
+            da = ((int)(da / 100)) * 100;
+            
+            return "" + (int)da + " ft";
+        }
+
+        return "";
+    }
+    
+    /**
+     * Returns best wind aligned runway from METAR
+     * @param metar
+     * @param elevation
+     * @return
+     */
+    public static String getBestRunway(String metar, LinkedList<String> runways) {
+        
+        if(null == runways || null == metar) {
+            return "";
+        }
+        
+        String wind = "";
+        double dir = 0;
+        double spd0 = 0;
+        double spd1 = 0;
+        
+        boolean windset = false;
+        
+        // parse time, temp, altitude setting 
+        String tokens[] = metar.split(" ");
+        
+        try {
+            for(int i = 0; i < tokens.length; i++) {
+                if(tokens[i].equals("RMK")) {
+                    break;
+                }
+                if(tokens[i].matches(".*KT")) {
+                    wind = tokens[i];
+                    // first 3 digits are direction true, or VRB.
+                    String tmp = wind.substring(0, 3);
+                    if(tmp.equals("VRB")) {
+                        // variable, almost calm
+                        tmp = "000";
+                    }
+                    dir = Double.parseDouble(tmp);
+                    // next 2 digits are speed
+                    spd0 = Double.parseDouble(wind.substring(3, 5));
+                    // could be gusting
+                    if(wind.contains("G")) {
+                        // gusting to
+                        spd1 = Double.parseDouble(wind.substring(6, 8));
+                    }
+                    windset = true;
+                    continue;
+                }
+            }
+        }
+        catch (Exception e) {
+        }
+        
+        double head1 = 0;
+        double head0 = 0;
+        double cross1 = 0;
+        double cross0 = 0;
+        
+        if(windset) {
+            /*
+             * Find best wind aligned runway
+             */
+            double maxW = -1E10;
+            String best = "";
+            for(String s : runways) {
+                String run[] = s.split(",");
+                try {
+                    double rhead = Double.parseDouble(run[1]);
+                    // find cross and head wind components
+                    // aviation formulary
+                    head0 = spd0 * Math.cos(Math.toRadians(dir - rhead));
+                    if(head0 > maxW) {
+                        // find runway with max headwind component
+                        maxW = head0;
+                        cross0 = spd0 * Math.sin(Math.toRadians(dir - rhead));
+                        if(spd1 != 0) {
+                            head1 = spd1 * Math.cos(Math.toRadians(dir - rhead));
+                            cross1 = spd1 * Math.sin(Math.toRadians(dir - rhead));
+                        }
+                        best = run[0];
+                        best += "\n " + Math.abs((int)head0);
+                        if(spd1 != 0) {
+                            best += "G" + Math.abs((int)head1);
+                        }
+                        // T = tail, H = head, L = left, R = right
+                        best += (head0 < 0 ? "T KT" : "H KT");
+                        best += "\n " + Math.abs((int)cross0);
+                        if(spd1 != 0) {
+                            best += "G" + Math.abs((int)cross1);
+                        }
+                        
+                        best += (cross0 < 0 ? "LX KT" : "RX KT");
+                    }
+                }
+                catch (Exception e) {
+                    return "";
+                }
+                
+            }
+            return best;
+        }
+
+        return "";
+    }
+
 }

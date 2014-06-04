@@ -12,16 +12,27 @@ Redistribution and use in source and binary forms, with or without modification,
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ds.avare"
-    android:versionCode="152"
-    android:versionName="5.3.2" >
+    android:versionCode="179"
+    android:versionName="5.5.9" >
     <uses-sdk
         android:minSdkVersion="8"
-        android:targetSdkVersion="17" />
+        android:targetSdkVersion="19" />
+    
+    <!-- GCM requires a Google account. -->
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+ 
+    <!-- Network State Permissions to detect Internet status -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.network" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+    
     <application
         android:icon="@drawable/aircraft"
         android:label="@string/app_name"
@@ -35,16 +46,24 @@ Redistribution and use in source and binary forms, with or without modification,
             </intent-filter>
         </service>
         <activity android:name=".PrefActivity" />
-        <activity android:name="SearchActivity" />
-        <activity android:name="PlanActivity" />
+        <activity android:name=".SearchActivity" />
+        <activity android:name=".PlanActivity" />
         <activity android:name=".AirportActivity" />
         <activity android:name=".SatelliteActivity" />
         <activity android:name=".WebActivity" />
         <activity android:name=".LocationActivity" />
         <activity android:name=".NearestActivity" />
         <activity android:name=".PlatesActivity" />
+        <activity android:name=".PlatesTagActivity" />
         <activity android:name=".ChartsDownloadActivity" />
         <activity android:name=".WeatherActivity" />
+        <activity android:name=".ChecklistActivity"/>
+        <activity android:name=".RegisterActivity"/>
+        <activity android:name=".MessageActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+            </intent-filter>
+        </activity>
         <activity
             android:name="com.ds.avare.MainActivity"
             android:label="@string/title_activity_main" >
@@ -59,5 +78,6 @@ Redistribution and use in source and binary forms, with or without modification,
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+        
     </application>
 </manifest>

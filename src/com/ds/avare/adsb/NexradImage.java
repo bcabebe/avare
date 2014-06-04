@@ -11,10 +11,11 @@ Redistribution and use in source and binary forms, with or without modification,
 */
 package com.ds.avare.adsb;
 
-
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
+
+import com.ds.avare.utils.Helper;
 
 import android.util.SparseArray;
 
@@ -25,6 +26,8 @@ import android.util.SparseArray;
  */
 public class NexradImage {
     
+    private static final long EXPIRES = 1000 * 60 * 60 * 2; // 2 hours
+
     /*
      * Northern hemisphere only
      * Cover 0 to 60 degrees latitude
@@ -43,11 +46,11 @@ public class NexradImage {
      */
     private static final int MAX_ENTRIES = 1620;
     private SparseArray<NexradBitmap> mImg;
-    private String mUpdated;
+    private long mUpdated;
     
     public NexradImage() { 
         mImg = new SparseArray<NexradBitmap>();
-        mUpdated = "";
+        mUpdated = 0;
     }
     
     /**
@@ -69,9 +72,7 @@ public class NexradImage {
                     mImg.delete(i);
                 }
             }
-            SimpleDateFormat df = new SimpleDateFormat("MM_dd_yyyy_hh_mm_UTC", Locale.getDefault());
-            df.setTimeZone(TimeZone.getTimeZone("GMT"));
-            mUpdated = df.format(time);
+            mUpdated = time;
         }
         if(null != data) {
             if(mImg.get(block) != null) {
@@ -88,9 +89,7 @@ public class NexradImage {
                 return;
             }
             mImg.put(block, new NexradBitmap(time, data, block, isConus, cols, rows));
-            SimpleDateFormat df = new SimpleDateFormat("MM_dd_yyyy_hh_mm_UTC", Locale.getDefault());
-            df.setTimeZone(TimeZone.getTimeZone("GMT"));
-            mUpdated = df.format(time);
+            mUpdated = time;
         }
     }
     
@@ -106,7 +105,22 @@ public class NexradImage {
      * 
      * @return
      */
-    public String getTime() {
-        return mUpdated;
+    public boolean isOld() {
+        long diff = Helper.getMillisGMT();
+        diff -= mUpdated; 
+        if(diff > EXPIRES) {
+            return true;
+        }
+        return false;
     }
+
+    /**
+     * 
+     * @return
+     */
+    public String getDate() {
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()); 
+        return formatter.format(new Date(mUpdated)) + "Z";
+    }
+
 }

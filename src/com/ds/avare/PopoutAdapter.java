@@ -47,21 +47,23 @@ public class PopoutAdapter extends BaseExpandableListAdapter {
     private LinkedList<String> mFreq;
     private String mTfr;
     private String mSua;
+    private String mPerformance;
+    private String mRadar;
     private String mMets;
-    private String mNexrad;
     private WindsAloft mWa;
     private Typeface mFace;
 
     private static final int GROUP_COMM = 0;
-    private static final int GROUP_METAR = 1;
-    private static final int GROUP_TAF = 2;
-    private static final int GROUP_WA = 3;
-    private static final int GROUP_PIREP = 4;
-    private static final int GROUP_METS = 5;
-    private static final int GROUP_TFR = 6;
-    private static final int GROUP_SUA = 7;
-    private static final int GROUP_NEXRAD = 8;
-    private static final int GROUP_NUM = 9;
+    private static final int GROUP_PERFORMANCE = 1;
+    private static final int GROUP_METAR = 2;
+    private static final int GROUP_TAF = 3;
+    private static final int GROUP_WA = 4;
+    private static final int GROUP_PIREP = 5;
+    private static final int GROUP_METS = 6;
+    private static final int GROUP_TFR = 7;
+    private static final int GROUP_SUA = 8;
+    private static final int GROUP_RADAR = 9;
+    private static final int GROUP_NUM = 10;
     
     /**
      * @param context
@@ -82,6 +84,7 @@ public class PopoutAdapter extends BaseExpandableListAdapter {
          */
         mChildren = new String[GROUP_NUM][];
         mChildren[GROUP_COMM] = new String[1];
+        mChildren[GROUP_PERFORMANCE] = new String[1];
         mChildren[GROUP_METAR] = new String[1];
         mChildren[GROUP_TAF] = new String[1];
         mChildren[GROUP_WA] = new String[1];
@@ -89,7 +92,7 @@ public class PopoutAdapter extends BaseExpandableListAdapter {
         mChildren[GROUP_METS] = new String[1];
         mChildren[GROUP_TFR] = new String[1];
         mChildren[GROUP_SUA] = new String[1];
-        mChildren[GROUP_NEXRAD] = new String[1];
+        mChildren[GROUP_RADAR] = new String[1];
         
         mChildrenText = new String[GROUP_NUM];
 
@@ -104,14 +107,15 @@ public class PopoutAdapter extends BaseExpandableListAdapter {
         mWa = data.wa;
         mFreq = data.freq;
         mSua = data.sua;
-        mNexrad = data.nexrad;
-
+        mRadar = data.radar;
+        mPerformance = data.performance;
         
+        mChildrenText[GROUP_PERFORMANCE] = mPerformance == null ? "" : mPerformance;
         mChildrenText[GROUP_TFR] = mTfr == null ? "" : mTfr;
         mChildrenText[GROUP_METS] = mMets == null ? "" : mMets;
         mChildrenText[GROUP_SUA] = mSua == null ? "" : mSua;
-        mChildrenText[GROUP_NEXRAD] = mNexrad == null ? "" : mNexrad;
-
+        mChildrenText[GROUP_RADAR] = mRadar == null ? "" : mRadar;
+        
         if(mMetar == null) {
             mChildrenText[GROUP_METAR] = "";
         }
@@ -212,6 +216,10 @@ public class PopoutAdapter extends BaseExpandableListAdapter {
                 tv.setTextColor(0xFFFFFFFF);
                 tv.setText(mGroups[group]);
                 break;
+            case GROUP_PERFORMANCE:
+                tv.setTextColor(0xFFFFFFFF);
+                tv.setText(mGroups[group]);
+                break;
             case GROUP_METAR:
                 int col = (mMetar == null) ? 0xFFFFFFFF : WeatherHelper.metarColor(mMetar.flightCategory);
                 tv.setText(mGroups[group]);
@@ -241,7 +249,7 @@ public class PopoutAdapter extends BaseExpandableListAdapter {
                 tv.setTextColor(0xFFFFFFFF);
                 tv.setText(mGroups[group]);
                 break;
-            case GROUP_NEXRAD:
+            case GROUP_RADAR:
                 tv.setTextColor(0xFFFFFFFF);
                 tv.setText(mGroups[group]);
                 break;
